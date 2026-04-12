@@ -1,0 +1,162 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-body text-slate-800 bg-white;
+  }
+
+  ::selection {
+    @apply bg-teal-200/60 text-teal-900;
+  }
+
+  /* Prevent layout shift from scrollbar */
+  html {
+    overflow-y: scroll;
+  }
+}
+
+@layer components {
+  /* ========================================
+     HERO — Animated underwater gradient
+     ======================================== */
+  .hero-gradient {
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(14, 116, 144, 0.5) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(8, 145, 178, 0.35) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(20, 184, 166, 0.15) 0%, transparent 60%),
+      linear-gradient(180deg, #020C17 0%, #062133 40%, #0A3A5C 100%);
+    background-size: 200% 200%;
+    animation: ocean-drift 20s ease-in-out infinite;
+  }
+
+  /* Caustic light ripple overlay */
+  .caustic-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 25% 35%, rgba(56, 189, 248, 0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at 75% 65%, rgba(20, 184, 166, 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 20%, rgba(125, 211, 252, 0.04) 0%, transparent 40%);
+    animation: caustic 10s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes caustic {
+    0%, 100% { opacity: 0.6; transform: scale(1) rotate(0deg); }
+    33% { opacity: 1; transform: scale(1.05) rotate(1deg); }
+    66% { opacity: 0.4; transform: scale(0.98) rotate(-0.5deg); }
+  }
+
+  /* ========================================
+     CARDS
+     ======================================== */
+  .card-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+  .card-lift:hover {
+    @apply -translate-y-1.5;
+    box-shadow:
+      0 10px 25px -5px rgba(20, 184, 166, 0.08),
+      0 8px 10px -6px rgba(6, 33, 51, 0.06);
+  }
+
+  /* ========================================
+     IN SEASON PULSE
+     ======================================== */
+  .season-dot {
+    @apply relative inline-block w-2 h-2 rounded-full bg-emerald-500;
+  }
+  .season-dot::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-emerald-400;
+    animation: pulse-soft 2.5s ease-in-out infinite;
+  }
+
+  /* ========================================
+     PHOTO PLACEHOLDER GRADIENTS
+     Replace with real images in production
+     ======================================== */
+  .photo-placeholder-ocean {
+    background: linear-gradient(135deg, #0C4A6E 0%, #164E63 40%, #115E59 100%);
+  }
+  .photo-placeholder-reef {
+    background: linear-gradient(135deg, #134E4A 0%, #0E7490 50%, #0369A1 100%);
+  }
+  .photo-placeholder-sand {
+    background: linear-gradient(135deg, #92400E 0%, #A16207 40%, #65A30D 100%);
+  }
+  .photo-placeholder-species {
+    background: linear-gradient(135deg, #0F766E 0%, #0E7490 50%, #1E40AF 100%);
+  }
+
+  /* ========================================
+     WAVE DIVIDER
+     ======================================== */
+  .wave-divider {
+    @apply absolute bottom-0 left-0 w-full overflow-hidden leading-[0];
+  }
+  .wave-divider svg {
+    @apply relative block w-full;
+    height: 60px;
+  }
+  @media (min-width: 768px) {
+    .wave-divider svg {
+      height: 80px;
+    }
+  }
+
+  /* ========================================
+     SECTION SPACING
+     ======================================== */
+  .section-padding {
+    @apply py-16 md:py-24 px-6;
+  }
+
+  /* ========================================
+     WIZARD STEPS
+     ======================================== */
+  .step-option {
+    @apply relative border-2 border-slate-200 rounded-2xl p-4 cursor-pointer
+           transition-all duration-200 hover:border-teal-400 hover:bg-teal-50/50;
+  }
+  .step-option.selected {
+    @apply border-teal-500 bg-teal-50 ring-2 ring-teal-500/20;
+  }
+  .step-option-multi {
+    @apply relative border-2 border-slate-200 rounded-xl px-4 py-3 cursor-pointer
+           transition-all duration-200 hover:border-teal-400 hover:bg-teal-50/50;
+  }
+  .step-option-multi.selected {
+    @apply border-teal-500 bg-teal-50;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Stagger animation delays for children */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+}
