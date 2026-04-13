@@ -56,18 +56,19 @@ async function getRegionData(regionSlug: string) {
   // 3. For each location, get species count + in-season count
   const locations: RegionLocation[] = [];
   for (const loc of locationsRaw) {
-    // Species count
+    // Species count (spottable only)
     const { count: speciesCount } = await supabase
       .from("location_species")
       .select("id", { count: "exact", head: true })
-      .eq("location_id", loc.id);
+      .eq("location_id", loc.id)
+      .eq("is_spottable", true);
 
     // In-season count: species with seasonality this month (common/occasional)
     // AND active ≤8 months total
     // We need to query location_species IDs first, then check seasonality
     let inSeasonCount = 0;
 
-    // Get all location_species IDs for this location
+    // Get all spottable location_species IDs for this location
     const allLsIds: string[] = [];
     let from = 0;
     const pageSize = 500;
@@ -77,6 +78,7 @@ async function getRegionData(regionSlug: string) {
         .from("location_species")
         .select("id")
         .eq("location_id", loc.id)
+        .eq("is_spottable", true)
         .range(from, from + pageSize - 1);
 
       if (!lsBatch || lsBatch.length === 0) {

@@ -12,6 +12,7 @@ export type TripSighting = {
   heroImageUrl: string | null;
   quantity: number;
   notes: string | null;
+  likelihood: "common" | "occasional" | "rare" | null;
 };
 
 export type TripData = {
@@ -114,13 +115,50 @@ async function getTripData(tripId: string): Promise<TripData | null> {
     }
   }
 
-  // 6. Total species at this location (for progress bar)
+  // 6. Fetch current-month likelihood for each species at this location
+  const currentMonth = new Date().getMonth() + 1;
+  const locationSpeciesIds: string[] = [];
+  for (let i = 0; i < speciesIds.length; i += 200) {
+    const batch = speciesIds.slice(i, i + 200);
+    const { data: lsRows } = await supabase
+      .from("location_species")
+      .select("id, species_id")
+      .eq("location_id", location.id)
+      .in("species_id", batch);
+    if (lsRows) locationSpeciesIds.push(...lsRows.map((r) => `${r.id}::${r.species_id}`));
+  }
+
+  const likelihoodMap = new Map<string, "common" | "occasional" | "rare">();
+  const lsIdToSpeciesId = new Map<string, string>();
+  for (const entry of locationSpeciesIds) {
+    const [lsId, spId] = entry.split("::");
+    lsIdToSpeciesId.set(lsId, spId);
+  }
+  const lsIds = [...lsIdToSpeciesId.keys()];
+
+  for (let i = 0; i < lsIds.length; i += 200) {
+    const batch = lsIds.slice(i, i + 200);
+    const { data: seasonality } = await supabase
+      .from("species_seasonality")
+      .select("location_species_id, likelihood")
+      .in("location_species_id", batch)
+      .eq("month", currentMonth);
+    if (seasonality) {
+      for (const s of seasonality) {
+        const spId = lsIdToSpeciesId.get(s.location_species_id);
+        if (spId) likelihoodMap.set(spId, s.likelihood as "common" | "occasional" | "rare");
+      }
+    }
+  }
+
+  // 7. Spottable species at this location (for progress bar)
   const { count: totalSpeciesAtLocation } = await supabase
     .from("location_species")
     .select("id", { count: "exact", head: true })
-    .eq("location_id", location.id);
+    .eq("location_id", location.id)
+    .eq("is_spottable", true);
 
-  // 7. Build sightings list
+  // 8. Build sightings list
   const tripSightings: TripSighting[] = sightings.map((s) => {
     const sp = speciesMap.get(s.species_id);
     return {
@@ -131,6 +169,7 @@ async function getTripData(tripId: string): Promise<TripData | null> {
       heroImageUrl: sp?.hero_image_url ?? null,
       quantity: s.quantity,
       notes: s.notes,
+      likelihood: likelihoodMap.get(s.species_id) ?? null,
     };
   });
 

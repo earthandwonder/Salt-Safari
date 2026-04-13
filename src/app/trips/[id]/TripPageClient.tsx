@@ -7,11 +7,13 @@ import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WaveDivider } from "@/components/WaveDivider";
 import { ResponsiveGrid } from "@/components/ResponsiveGrid";
+import { LikelihoodPill } from "@/components/LikelihoodPill";
 import type { TripData } from "./page";
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00");
   return date.toLocaleDateString("en-AU", {
+    weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -141,7 +143,7 @@ export function TripPageClient({ trip }: { trip: TripData }) {
             >
               <div className="flex items-center justify-between text-xs text-white/60 mb-2">
                 <span>
-                  {speciesCount} of {trip.totalSpeciesAtLocation} species at{" "}
+                  {speciesCount} of {trip.totalSpeciesAtLocation} spottable species at{" "}
                   {trip.locationName}
                 </span>
                 <span className="font-medium text-white/80">{progressPct}%</span>
@@ -174,17 +176,6 @@ export function TripPageClient({ trip }: { trip: TripData }) {
               </svg>
               Discover {trip.locationName}
             </Link>
-            <Link
-              href="/id"
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/30 text-white/90 hover:bg-white/10 text-sm font-medium transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              What did you see?
-            </Link>
-
             {/* Desktop share button */}
             <button
               onClick={handleShare}
@@ -253,7 +244,7 @@ export function TripPageClient({ trip }: { trip: TripData }) {
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
-          Share
+          Share with your swim group
         </button>
       </div>
 
@@ -290,6 +281,7 @@ function SightingCard({
     heroImageUrl: string | null;
     quantity: number;
     notes: string | null;
+    likelihood: "common" | "occasional" | "rare" | null;
   };
 }) {
   return (
@@ -330,6 +322,11 @@ function SightingCard({
           <p className="text-xs text-slate-400 italic mt-0.5 truncate">
             {sighting.scientificName}
           </p>
+        )}
+        {sighting.likelihood && (
+          <div className="mt-1.5">
+            <LikelihoodPill likelihood={sighting.likelihood} />
+          </div>
         )}
         {sighting.notes && (
           <p className="text-xs text-slate-400 mt-1.5 line-clamp-2">

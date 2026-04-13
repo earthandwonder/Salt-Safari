@@ -949,3 +949,61 @@
 
 ### Deviations
 - None.
+
+---
+
+## Session 19 — Homepage Simplification, Trip Polish, Spottable Counts, Pricing Model Update
+**Date:** 2026-04-14
+**Status:** In progress (uncommitted changes)
+
+### What was built
+
+#### Homepage hero image + simplification
+- **Server component:** `src/app/page.tsx`
+  - Fetches `hero_image_url` from Cabbage Tree Bay location record and passes to client.
+
+- **Client component:** `src/app/HomePageClient.tsx`
+  - Hero now displays location hero photo as full-bleed background image with gradient overlay (`from-deep/90 via-deep/55 to-deep/25`), falling back to caustic overlay if no image.
+  - Heavy drop shadows on all hero text for readability over photo.
+  - Reduced hero height from `100svh` to `70svh`.
+  - Removed dual CTA buttons and stats row from hero — cleaner, more visual-first layout.
+  - Copy tweak: "snorkelling spot" → "swim spot".
+  - Subtitle text opacity increased (`white/70` → `white/90`).
+
+#### Trip page polish
+- **Server component:** `src/app/trips/[id]/page.tsx`
+  - Fetches current-month likelihood for each species at the trip location via `species_seasonality`.
+  - Passes `likelihood` field to each `TripSighting`.
+  - Progress bar now counts spottable species only (`.eq("is_spottable", true)`).
+
+- **Client component:** `src/app/trips/[id]/TripPageClient.tsx`
+  - Sighting cards now show `LikelihoodPill` (common/occasional/rare) when data available.
+  - Date format includes weekday (e.g. "Monday, 14 April 2026").
+  - Progress bar label: "species" → "spottable species".
+  - Removed "What did you see?" CTA button (was redundant).
+  - Share button text: "Share" → "Share with your swim group".
+
+#### Sighting log — trip report links
+- **Log page:** `src/app/log/page.tsx`
+  - Trip cards now include "View trip report" link and "Share" button.
+  - Passes `userId` to `TripCard` component to construct trip URLs (`/trips/{userId}-{locationSlug}-{date}`).
+  - Share uses `navigator.share()` with clipboard fallback.
+
+#### Region page — spottable species counts
+- **Region page:** `src/app/locations/[region]/page.tsx`
+  - Species count and in-season count queries now filter to spottable species only (`.eq("is_spottable", true)`).
+  - Consistent with the spottable system introduced in Session 17.
+
+#### Header — profile link update
+- **Header:** `src/components/Header.tsx`
+  - Replaced username/display-name link with "My Profile" link pointing to `/profile` (both desktop and mobile nav).
+  - z-index increased from `z-50` to `z-[100]` to ensure header stays above all content.
+
+#### Pricing model update — Cabbage Tree Bay always free
+- **Plan doc:** `docs/18-plan-app-website-build.md`
+  - Added "Cabbage Tree Bay is always free" policy — all premium features (Species ID tool, species deep dives) permanently free for the flagship location.
+  - Updated pricing table to three columns: Free (all locations), Free (CTB only), Paid (other locations).
+  - Paywall only applies when users access premium features for non-CTB locations.
+
+### Deviations
+- Header now links to `/profile` which doesn't exist yet as a route (previously linked to `/u/[username]`). Will need a profile page or redirect.

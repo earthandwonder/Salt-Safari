@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { LikelihoodPill } from "@/components/LikelihoodPill";
 
 type SightingWithDetails = {
   id: string;
@@ -21,6 +22,7 @@ type SightingWithDetails = {
   locationName: string;
   locationSlug: string;
   regionSlug: string;
+  likelihood: "common" | "occasional" | "rare" | null;
 };
 
 type Trip = {
@@ -126,11 +128,47 @@ export default function SightingLogPage() {
         }
       }
 
+      // Fetch current-month likelihood for species at their locations
+      const currentMonth = new Date().getMonth() + 1;
+      const likelihoodMap = new Map<string, "common" | "occasional" | "rare">();
+
+      // Get location_species rows for all (location, species) pairs
+      const lsIdToKey = new Map<string, string>();
+      for (let i = 0; i < locationIds.length; i += 200) {
+        const locBatch = locationIds.slice(i, i + 200);
+        const { data: lsRows } = await supabase
+          .from("location_species")
+          .select("id, location_id, species_id")
+          .in("location_id", locBatch);
+        if (lsRows) {
+          for (const ls of lsRows) {
+            lsIdToKey.set(ls.id, `${ls.location_id}::${ls.species_id}`);
+          }
+        }
+      }
+
+      const lsIds = [...lsIdToKey.keys()];
+      for (let i = 0; i < lsIds.length; i += 200) {
+        const batch = lsIds.slice(i, i + 200);
+        const { data: seasonality } = await supabase
+          .from("species_seasonality")
+          .select("location_species_id, likelihood")
+          .in("location_species_id", batch)
+          .eq("month", currentMonth);
+        if (seasonality) {
+          for (const s of seasonality) {
+            const key = lsIdToKey.get(s.location_species_id);
+            if (key) likelihoodMap.set(key, s.likelihood as "common" | "occasional" | "rare");
+          }
+        }
+      }
+
       // Enrich sightings
       const enriched: SightingWithDetails[] = sightings.map((s) => {
         const sp = speciesMap.get(s.species_id);
         const loc = locationMap.get(s.location_id);
         const reg = loc ? regionMap.get(loc.region_id) : null;
+        const lKey = `${s.location_id}::${s.species_id}`;
         return {
           ...s,
           speciesName: sp?.name ?? "Unknown species",
@@ -140,6 +178,7 @@ export default function SightingLogPage() {
           locationName: loc?.name ?? "Unknown location",
           locationSlug: loc?.slug ?? "",
           regionSlug: reg?.slug ?? "",
+          likelihood: likelihoodMap.get(lKey) ?? null,
         };
       });
 
@@ -199,7 +238,7 @@ export default function SightingLogPage() {
         </div>
         <div className="relative z-10 max-w-7xl mx-auto px-6 pt-28 pb-12 md:pt-32 md:pb-16">
           <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight">
-            Your Sighting Log
+            Your Swim Log
           </h1>
           {!loading && trips.length > 0 && (
             <div className="flex flex-wrap items-center gap-4 mt-5">
@@ -361,6 +400,11 @@ function TripCard({ trip, userId }: { trip: Trip; userId: string | null }) {
                 <p className="text-sm text-slate-400 italic truncate mt-0.5">
                   {s.scientificName}
                 </p>
+              )}
+              {s.likelihood && (
+                <div className="mt-1.5">
+                  <LikelihoodPill likelihood={s.likelihood} />
+                </div>
               )}
               {s.notes && (
                 <p className="text-xs text-slate-400 mt-1.5 line-clamp-3">

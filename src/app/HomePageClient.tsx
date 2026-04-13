@@ -39,6 +39,7 @@ interface HomePageClientProps {
   userSpottedCount?: number;
   userLatestLog?: UserLatestLog | null;
   isLoggedIn?: boolean;
+  heroImageUrl?: string | null;
 }
 
 export function HomePageClient({
@@ -50,6 +51,7 @@ export function HomePageClient({
   userSpottedCount,
   userLatestLog,
   isLoggedIn,
+  heroImageUrl,
 }: HomePageClientProps) {
   const spottedCount = isLoggedIn ? (userSpottedCount ?? 0) : 0;
   const progressPercent = spottableCount > 0 ? Math.round((spottedCount / spottableCount) * 100) : 0;
@@ -60,79 +62,37 @@ export function HomePageClient({
       {/* ──────────────────────────────────────────
           HERO — The Wow Number
           ────────────────────────────────────────── */}
-      <section className="relative min-h-[100svh] flex flex-col justify-end hero-gradient overflow-hidden">
-        <div className="caustic-overlay" />
+      <section className="relative z-0 min-h-[70svh] flex flex-col justify-end hero-gradient overflow-hidden">
+        {heroImageUrl && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-deep/90 via-deep/55 to-deep/25" />
+          </>
+        )}
+        {!heroImageUrl && <div className="caustic-overlay" />}
 
         <div className="relative z-10 max-w-7xl mx-auto w-full px-6 pb-28 md:pb-32 pt-32">
-          <p className="text-teal-400 font-display text-sm md:text-base tracking-widest uppercase mb-4 opacity-0 animate-fade-up">
+          <p className="text-teal-300 font-display text-sm md:text-base tracking-widest uppercase mb-4 opacity-0 animate-fade-up font-medium drop-shadow-[0_0_4px_rgba(0,0,0,1)] drop-shadow-[0_0_10px_rgba(0,0,0,1)] drop-shadow-[0_0_20px_rgba(0,0,0,1)] drop-shadow-[0_0_60px_rgba(0,0,0,1)]">
             Cabbage Tree Bay Aquatic Reserve
           </p>
 
-          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-white font-semibold leading-[1.05] tracking-tight mb-6 opacity-0 animate-fade-up stagger-1 text-balance">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-white font-semibold leading-[1.05] tracking-tight mb-6 opacity-0 animate-fade-up stagger-1 text-balance drop-shadow-[0_4px_40px_rgba(0,0,0,1)] drop-shadow-[0_0_60px_rgba(0,0,0,0.7)]">
             {speciesCount.toLocaleString()}+ species
             <br />
             call this place home.
           </h1>
 
-          <p className="text-lg md:text-xl text-white/70 max-w-lg mb-10 opacity-0 animate-fade-up stagger-2">
+          <p className="text-lg md:text-xl text-white/90 max-w-lg mb-10 opacity-0 animate-fade-up stagger-2 drop-shadow-[0_2px_20px_rgba(0,0,0,1)] drop-shadow-[0_0_40px_rgba(0,0,0,0.6)]">
             Your complete guide to every species at Sydney&apos;s best
-            snorkelling spot. Know what you&apos;ll see. Track what
+            swim spot. Know what you&apos;ll see. Track what
             you&apos;ve found.
           </p>
 
-          {/* Dual CTAs */}
-          <div className="flex flex-wrap gap-4 opacity-0 animate-fade-up stagger-3">
-            <Link
-              href="/locations/sydney/cabbage-tree-bay"
-              className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3.5 rounded-full font-semibold text-base transition-colors"
-            >
-              Explore the species
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                />
-              </svg>
-            </Link>
-            <Link
-              href="/id?location=cabbage-tree-bay"
-              className="inline-flex items-center gap-2 border-2 border-white/30 hover:border-white/60 text-white px-7 py-3.5 rounded-full font-semibold text-base transition-colors hover:bg-white/5"
-            >
-              What did I just see?
-            </Link>
-          </div>
-
-          {/* Stats */}
-          <div className="flex gap-8 mt-10 opacity-0 animate-fade-up stagger-4">
-            <div>
-              <div className="text-2xl md:text-3xl font-display font-bold text-white">
-                {speciesCount.toLocaleString()}+
-              </div>
-              <div className="text-sm text-white/50 tracking-wide">
-                Species
-              </div>
-            </div>
-            {inSeasonCount > 0 && (
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="text-2xl md:text-3xl font-display font-bold text-white">
-                    {inSeasonCount}
-                  </div>
-                  <span className="season-dot" />
-                </div>
-                <div className="text-sm text-white/50 tracking-wide">
-                  In Season Now
-                </div>
-              </div>
-            )}
-          </div>
         </div>
 
         <WaveDivider fill="#FFFBF5" />
@@ -149,32 +109,13 @@ export function HomePageClient({
                 <div className="flex items-center gap-2 mb-2">
                   <span className="season-dot" />
                   <span className="text-emerald-600 text-sm font-medium tracking-wide uppercase">
-                    In Season Now
+                    {inSeasonCount} In Season Now
                   </span>
                 </div>
                 <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight">
-                  Visiting this month? Look for these.
+                  Visiting this month? Look out for these.
                 </h2>
               </div>
-              <Link
-                href="/alerts"
-                className="hidden sm:flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
-              >
-                Get alerts
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </Link>
             </div>
 
             {/* Horizontal scroll on mobile, grid on desktop */}
@@ -257,7 +198,7 @@ export function HomePageClient({
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed">
               Every species you spot adds to your collection. Track your
-              progress across visits. Share your best dives.
+              progress across visits.
             </p>
           </div>
 
@@ -332,107 +273,129 @@ export function HomePageClient({
             ))}
           </div>
 
-          {/* Trip report mockup */}
-          <div className="mt-10 flex flex-col md:flex-row items-center gap-8">
-            {/* Trip card preview */}
-            <div className="order-2 md:order-1 w-full md:w-auto md:flex-shrink-0">
-              <div className="bg-deep rounded-2xl p-5 md:p-6 max-w-sm mx-auto md:mx-0 shadow-xl shadow-deep/20">
-                <p className="text-white/40 text-xs tracking-wider uppercase mb-3">
-                  {isLoggedIn && userLatestLog ? "Your latest trip" : "Shareable trip report"}
-                </p>
-                <p className="font-display text-lg font-semibold text-white mb-1">
-                  {isLoggedIn && userLatestLog
-                    ? `You saw ${userLatestLog.speciesCount} species`
-                    : "You saw 8 species"}
-                </p>
-                <p className="text-white/50 text-sm mb-4">
-                  {isLoggedIn && userLatestLog
-                    ? `${userLatestLog.locationName} \u00B7 ${new Date(userLatestLog.date).toLocaleDateString("en-AU", { month: "long", day: "numeric", year: "numeric" })}`
-                    : "Cabbage Tree Bay \u00B7 April 13, 2026"}
-                </p>
+          {/* Log a sighting CTA */}
+          <div className="mt-8 flex justify-center">
+            <Link
+              href={isLoggedIn ? "/log" : "/signup"}
+              className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
+            >
+              Log a sighting
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </Link>
+          </div>
 
-                {/* Avatar stack of species */}
-                <div className="flex items-center mb-4">
-                  <div className="flex -space-x-2">
-                    {isLoggedIn && userLatestLog ? (
-                      <>
-                        {userLatestLog.speciesImages.slice(0, 5).map((url, i) => (
+          {/* Trip logging intro */}
+          <div className="mt-16 max-w-2xl mx-auto text-center mb-8">
+            <h3 className="font-display text-2xl md:text-3xl font-semibold text-deep tracking-tight mb-3">
+              Remember what you saw.
+            </h3>
+            <p className="text-slate-500 text-lg leading-relaxed">
+              Log your sightings after each swim and we&apos;ll build you a trip report you can share with your swim group.
+            </p>
+          </div>
+
+          {/* Trip card preview */}
+          <div className="max-w-sm mx-auto">
+            <div className="bg-deep rounded-2xl p-5 md:p-6 shadow-xl shadow-deep/20">
+              <p className="text-white/40 text-xs tracking-wider uppercase mb-3">
+                {isLoggedIn && userLatestLog ? "Your latest trip" : "Shareable trip report"}
+              </p>
+              <p className="font-display text-lg font-semibold text-white mb-1">
+                {isLoggedIn && userLatestLog
+                  ? `You saw ${userLatestLog.speciesCount} species`
+                  : "You saw 8 species"}
+              </p>
+              <p className="text-white/50 text-sm mb-4">
+                {isLoggedIn && userLatestLog
+                  ? `${userLatestLog.locationName} \u00B7 ${new Date(userLatestLog.date).toLocaleDateString("en-AU", { month: "long", day: "numeric", year: "numeric" })}`
+                  : "Cabbage Tree Bay \u00B7 April 13, 2026"}
+              </p>
+
+              {/* Avatar stack of species */}
+              <div className="flex items-center mb-4">
+                <div className="flex -space-x-2">
+                  {isLoggedIn && userLatestLog ? (
+                    <>
+                      {userLatestLog.speciesImages.slice(0, 5).map((url, i) => (
+                        <div
+                          key={i}
+                          className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
+                          style={{ zIndex: 5 - i }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt="Species"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {userLatestLog.speciesCount > 5 && (
+                        <div className="w-9 h-9 rounded-full border-2 border-deep bg-white/10 flex items-center justify-center text-white/50 text-xs font-medium">
+                          +{userLatestLog.speciesCount - 5}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {collectionPreviewSpecies
+                        .filter((s) => s.revealed && s.heroImageUrl)
+                        .slice(0, 5)
+                        .map((s, i) => (
                           <div
-                            key={i}
+                            key={s.id}
                             className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
                             style={{ zIndex: 5 - i }}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={url}
-                              alt="Species"
+                              src={s.heroImageUrl!}
+                              alt={s.commonName}
                               className="w-full h-full object-cover"
                             />
                           </div>
                         ))}
-                        {userLatestLog.speciesCount > 5 && (
-                          <div className="w-9 h-9 rounded-full border-2 border-deep bg-white/10 flex items-center justify-center text-white/50 text-xs font-medium">
-                            +{userLatestLog.speciesCount - 5}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {collectionPreviewSpecies
-                          .filter((s) => s.revealed && s.heroImageUrl)
-                          .slice(0, 5)
-                          .map((s, i) => (
-                            <div
-                              key={s.id}
-                              className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
-                              style={{ zIndex: 5 - i }}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={s.heroImageUrl!}
-                                alt={s.commonName}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ))}
-                        <div className="w-9 h-9 rounded-full border-2 border-deep bg-white/10 flex items-center justify-center text-white/50 text-xs font-medium">
-                          +3
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      <div className="w-9 h-9 rounded-full border-2 border-deep bg-white/10 flex items-center justify-center text-white/50 text-xs font-medium">
+                        +3
+                      </div>
+                    </>
+                  )}
                 </div>
+              </div>
 
-                {/* Mini progress */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"
-                      style={{ width: `${Math.max(progressPercent, isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
-                    />
-                  </div>
-                  <span className="text-white/40 text-xs whitespace-nowrap">
-                    {spottedCount} of {spottableCount}
-                  </span>
+              {/* Mini progress */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"
+                    style={{ width: `${Math.max(progressPercent, isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
+                  />
                 </div>
+                <span className="text-white/40 text-xs whitespace-nowrap">
+                  {spottedCount} of {spottableCount}
+                </span>
               </div>
             </div>
 
-            {/* CTA text */}
-            <div className="order-1 md:order-2 text-center md:text-left">
-              <h3 className="font-display text-2xl font-semibold text-deep mb-2">
-                Every dive tells a story.
-              </h3>
-              <p className="text-slate-500 mb-6 max-w-md">
-                {isLoggedIn
-                  ? "Keep logging what you see and watch your collection grow. Share your trip reports with friends."
-                  : "Log what you see, track your collection, and share a beautiful trip report with friends. Free \u2014 no catches."}
-              </p>
+            {/* Share your swim button */}
+            <div className="mt-5 flex justify-center">
               <Link
                 href={isLoggedIn ? "/log" : "/signup"}
                 className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
               >
-                Log a sighting
+                Share your swim
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -582,7 +545,7 @@ export function HomePageClient({
               Free to use
             </p>
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-4 text-balance">
-              Saw something underwater?
+              Saw something different?
               <br />
               Find out what it was.
             </h2>
@@ -653,8 +616,7 @@ export function HomePageClient({
                 Cabbage Tree Bay Aquatic Reserve is a fully protected no-take
                 zone on Sydney&apos;s Northern Beaches. The marine life here
                 is extraordinary — blue gropers swim up to you, cuttlefish
-                hover in the shallows, and wobbegong sharks rest under every
-                ledge.
+                hover in the shallows, and sea turtles feast on the sea grass.
               </p>
               <p className="text-slate-500 leading-relaxed mb-8">
                 Shore access from Shelly Beach makes it one of the most

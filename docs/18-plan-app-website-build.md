@@ -874,14 +874,16 @@ Results show ranked matches with photos. No LLM needed — it's pure database fi
 
 **Pricing:** One-off purchase, A$9.99. No recurring billing. All prices GST-inclusive.
 
+**Cabbage Tree Bay is always free.** All premium features (Species ID tool, species deep dives) are permanently free for Cabbage Tree Bay. This is the flagship location — it drives SEO, word-of-mouth, and demonstrates the product. The paywall only applies when users access premium features for other locations.
+
 **Free vs paid:**
-| | Free | Paid (one-off) |
-|---|---|---|
-| Location pages, species lists, summaries | Yes | Yes |
-| Dive/sighting log + species checklist | Yes | Yes |
-| "In Season Now" alerts | Yes | Yes |
-| **Species ID tool** | Free in Phase 1-2 | **Gated in Phase 3** |
-| **Species deep dives** (behaviour, fun facts, ID tips, conservation) | No — see teaser + "unlock" CTA | **Yes** |
+| | Free (all locations) | Free (Cabbage Tree Bay only) | Paid (one-off, other locations) |
+|---|---|---|---|
+| Location pages, species lists, summaries | Yes | Yes | Yes |
+| Dive/sighting log + species checklist | Yes | Yes | Yes |
+| "In Season Now" alerts | Yes | Yes | Yes |
+| **Species ID tool** | — | **Always free** | **Gated in Phase 3** |
+| **Species deep dives** (behaviour, fun facts, ID tips, conservation) | No — see teaser + "unlock" CTA | **Always free** | **Yes** |
 
 **Why one-off:**
 - No subscription fatigue — people don't want another monthly charge for something they use a few times a year

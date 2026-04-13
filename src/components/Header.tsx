@@ -70,7 +70,7 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
         scrolled || menuOpen
           ? "bg-deep/95 backdrop-blur-md shadow-lg shadow-black/10"
           : "bg-transparent"
@@ -138,16 +138,12 @@ export default function Header() {
                     </svg>
                     Alerts
                   </Link>
-                  {username ? (
-                    <Link
-                      href={`/u/${username}`}
-                      className="text-white/70 hover:text-white text-sm transition-colors"
-                    >
-                      {displayName}
-                    </Link>
-                  ) : (
-                    <span className="text-white/70 text-sm">{displayName}</span>
-                  )}
+                  <Link
+                    href="/profile"
+                    className="text-white/70 hover:text-white text-sm transition-colors"
+                  >
+                    My Profile
+                  </Link>
                   <button
                     onClick={handleSignOut}
                     className="text-white/50 hover:text-white text-sm transition-colors"
@@ -235,9 +231,13 @@ export default function Header() {
                   >
                     Alerts
                   </Link>
-                  <div className="py-3 text-white/60 text-sm border-b border-white/10">
-                    Signed in as {displayName}
-                  </div>
+                  <Link
+                    href="/profile"
+                    className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    My Profile
+                  </Link>
                   <button
                     onClick={handleSignOut}
                     className="block w-full text-left py-3 text-white/80 hover:text-white text-lg"
