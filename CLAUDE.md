@@ -9,6 +9,7 @@ A website and PWA where swimmers, snorkellers, and divers discover which marine 
 - **Styling:** Tailwind CSS 3 + custom design system ("Pelagic" — Fraunces display font, Outfit body font)
 - **Maps:** Mapbox (react-map-gl)
 - **Payments:** Stripe (one-off purchase A$9.99 — unlocks Species ID tool + species deep dives)
+- **Photo Storage:** Cloudflare R2 (S3-compatible, 10 GB free, no egress fees)
 - **Email:** Resend (React Email templates)
 - **Animations:** Motion (framer-motion successor)
 
@@ -69,6 +70,35 @@ Photos: Wikimedia Commons (primary, all commercial) → Flickr CC → iNaturalis
 - `has_purchased()` helper for RLS policies
 - All photos self-hosted (never hotlink) with license audit trail
 - `data_quality` (stub/partial/complete) and `*_status` (draft/reviewed/published) fields enable incremental publishing
+
+## Implementation Guidelines (applies to every session)
+
+### Design
+- Use the `/design` frontend design skill for all page and component builds.
+- Follow the page structure and layout specs from `docs/18-plan-app-website-build.md` section "7b. Page Designs" precisely.
+- The Pelagic design system (Fraunces + Outfit, navy/sand/coral/teal) is a starting point. The existing `tailwind.config.ts` and `globals.css` define the tokens. If `/design` proposes something better, go with it — but maintain visual consistency across pages.
+- Mobile-first. Every page must work well on a phone screen.
+
+### Code Conventions
+- TypeScript everywhere. No `any` types.
+- Server Components by default. Only use `"use client"` when needed (interactivity, hooks, browser APIs).
+- Supabase queries in Server Components use the server client (`src/lib/supabase/server.ts`).
+- Supabase queries in Client Components use the browser client (`src/lib/supabase/client.ts`).
+- API routes for server-only operations (pipeline, webhooks, things needing secret key).
+- File structure follows `docs/18-plan-app-website-build.md` section "File & folder conventions".
+
+### Data
+- `data/csv/` and `data/locations/*.md` and `data/species/*.md` are **reference only**. Do not import them directly. The pipeline is the source of truth.
+- Content writing (location descriptions, species summaries, deep dives) is a **separate manual process**. Build the UI to display this content when it exists, but don't generate it during implementation sessions.
+
+### Testing
+- No formal test suite for Phase 1 (per plan). Validate pipeline output by spot-checking.
+- `npm run build` must pass after every session.
+- `npm run lint` should pass (fix warnings, don't suppress them).
+
+### Commits
+- Commit after each session with a descriptive message.
+- Don't push to main without the user's approval.
 
 ## Session Workflow
 Implementation is broken into numbered sessions. Before starting any session:

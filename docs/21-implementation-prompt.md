@@ -257,15 +257,16 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
 
 ### Session 5: Data Pipeline — Photo Pipeline
 
-**Goal:** Automated photo sourcing from Wikimedia Commons (+ optionally Flickr, CSIRO, iNat). Photos downloaded to Supabase Storage with license audit trail.
+**Goal:** Automated photo sourcing from Wikimedia Commons (+ optionally Flickr, CSIRO, iNat). Photos downloaded to Cloudflare R2 with license audit trail.
 
 **Read first:** `docs/18-plan-app-website-build.md` section "Photo sourcing strategy". `docs/13-marine-photo-sourcing.md` if it exists.
 
 **Steps:**
 
-1. **Supabase Storage setup**
-   - Create a `photos` bucket in Supabase Storage (via Dashboard or CLI). Public bucket (images served publicly).
-   - Add `NEXT_PUBLIC_SUPABASE_STORAGE_URL` to env if needed (usually `{SUPABASE_URL}/storage/v1/object/public/photos/`).
+1. **Cloudflare R2 setup** *(done in Session 6)*
+   - R2 bucket `salt-safari-photos` with public access via r2.dev subdomain.
+   - Upload module: `src/lib/pipeline/photos/r2.ts` (S3-compatible via `@aws-sdk/client-s3`).
+   - Env vars: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`.
 
 2. **Wikimedia Commons module** — `src/lib/pipeline/photos/wikimedia.ts`
    - Search by scientific name: `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch={scientificName}&prop=imageinfo&iiprop=url|extmetadata|size&iiurlwidth=1200&format=json`
@@ -286,10 +287,10 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
      3. If no results, search by common name.
      4. If still nothing, try iNaturalist (cc-by/cc0 only).
      5. Download best photo (largest, best quality).
-     6. Upload to Supabase Storage: `photos/{species-slug}/hero.{ext}`.
+     6. Upload to Cloudflare R2: `{species-slug}/hero.{ext}`.
      7. Insert into `photos` table with full audit trail: source, source_url, license, photographer_name, date_accessed.
      8. Set `is_hero = TRUE`, link to species via `species_id`.
-     9. Update `species.hero_image_url` with the public storage URL.
+     9. Update `species.hero_image_url` with the R2 public URL.
    - Also attempt to get 2-3 additional photos per species (different angles/life stages) — store as non-hero.
 
 5. **Integrate into pipeline runner**
@@ -298,13 +299,13 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
 
 6. **Verify**
    - Run for Cabbage Tree Bay species.
-   - Check Supabase Storage: photos uploaded.
+   - Check Cloudflare R2: photos uploaded and publicly accessible.
    - Check `photos` table: records with correct attribution.
    - Check `species` table: `hero_image_url` populated for species with photos.
    - Expect ~60-75% coverage from Wikimedia alone.
 
 **Guidance:**
-- **Never hotlink.** Always download and re-host in Supabase Storage.
+- **Never hotlink.** Always download and re-host in Cloudflare R2.
 - Record `date_accessed` for every photo — this is your legal proof that the license was valid when you accessed it.
 - Wikimedia Commons API is generous but can return low-quality results. Sort by image size and prefer photos over illustrations.
 - If Flickr API key is available, add it as a second source between Wikimedia and iNat. If not, skip it — Wikimedia + iNat will cover 60-75%.
@@ -342,7 +343,7 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
    - Weedy Seadragons: should be year-round but possibly with breeding season peak.
 
 4. **Validate photos**
-   - Check that photos render correctly from Supabase Storage.
+   - Check that photos render correctly from Cloudflare R2.
    - Check that license metadata is correct.
    - Spot-check a few attributions against the source URL.
 
@@ -896,7 +897,7 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
    - All pages render correctly.
    - Auth flow works (sign up, sign in, sign out).
    - Supabase queries return data.
-   - Images load from Supabase Storage.
+   - Images load from Cloudflare R2.
    - Mapbox maps load.
    - OG images generate correctly (test with [opengraph.xyz](https://opengraph.xyz) or similar).
 
