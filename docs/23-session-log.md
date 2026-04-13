@@ -535,3 +535,55 @@
 
 ### Build
 - `npm run build` passes clean. `/id` page is 4.29 kB first load JS. API route is 123 B.
+
+---
+
+## Session 12 — Sighting Log + Species Checklist
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **API routes for sightings:**
+  - `POST /api/sightings` — create a sighting (authenticated). Body: `{ speciesId, locationId, sightedAt, quantity, notes }`. Validates auth, requires speciesId + locationId.
+  - `GET /api/sightings` — get current user's sightings. Optional filters: `?locationId=...&date=...`. Returns reverse chronological.
+  - `DELETE /api/sightings/[id]` — delete a sighting (own only). RLS + explicit user_id check.
+  - All routes use Supabase server client with user's session (not service role).
+
+- **"Log a Sighting" modal:** `src/components/LogSightingModal.tsx`
+  - Client Component. Slide-up modal (mobile-friendly bottom sheet pattern).
+  - Species picker: searchable dropdown (Combobox pattern) — type to filter, select from list. Shows up to 50 results.
+  - Form fields: species (required), date (default today, max today), quantity (stepper, default 1), notes (optional textarea).
+  - Pre-selection support: can be opened with a specific species pre-filled (from quick-log).
+  - Success state: checkmark animation + "Added to your collection" confirmation.
+  - Error handling: validation messages, API error display.
+  - Body scroll lock while open. Backdrop click to close.
+
+- **Quick-log button on species cards:**
+  - Updated `SpeciesTab.tsx` — each unspotted species card shows a "+" button (top-left, appears on hover) for authenticated users.
+  - Clicking opens the sighting modal pre-filled with that species.
+  - "Log sighting" link added to the collection progress bar.
+
+- **Floating "Log a Sighting" FAB:**
+  - `LocationPageClient.tsx` — coral floating action button (bottom-right) for authenticated users.
+  - Opens the sighting modal without pre-selection.
+
+- **Collection state updates:**
+  - `LocationPageClient.tsx` — `handleSightingSuccess` callback adds the newly spotted species to `spottedIds` set, updating the progress bar and checkmark badges in real-time without page reload.
+
+- **Sighting log page:** `src/app/log/page.tsx`
+  - Client Component. Redirects to `/login` if not authenticated.
+  - Hero section with animated gradient, stats row (total sightings, species spotted, trips count).
+  - Fetches all user sightings with batched species, location, and region lookups.
+  - Groups by trip (same location + same date = one trip).
+  - Each trip card: location name (links to location page), formatted date (relative: "Today", "Yesterday", "3 days ago"; absolute after 7 days), species count badge, species thumbnail grid (up to 8 with overflow count), notes preview (first sighting with notes).
+  - Species thumbnails link to species pages. Quantity badge on multi-sightings.
+  - Empty state: "No sightings yet" with CTA to explore locations.
+  - Loading state: skeleton placeholders.
+
+- **Header updated:** Added "My Log" link for authenticated users (desktop nav + mobile menu).
+
+### Deviations
+- None. All 4 steps from the implementation prompt completed as specified.
+
+### Build
+- `npm run build` passes clean. `/api/sightings` routes are 131 B each. `/log` page is 3.02 kB first load JS. Location page unchanged at 8.89 kB.

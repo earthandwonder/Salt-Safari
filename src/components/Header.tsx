@@ -118,6 +118,12 @@ export default function Header() {
             <>
               {user ? (
                 <div className="flex items-center gap-4">
+                  <Link
+                    href="/log"
+                    className="text-white/70 hover:text-white text-sm transition-colors"
+                  >
+                    My Log
+                  </Link>
                   <span className="text-white/70 text-sm">{displayName}</span>
                   <button
                     onClick={handleSignOut}
@@ -192,6 +198,13 @@ export default function Header() {
             <>
               {user ? (
                 <>
+                  <Link
+                    href="/log"
+                    className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    My Log
+                  </Link>
                   <div className="py-3 text-white/60 text-sm border-b border-white/10">
                     Signed in as {displayName}
                   </div>

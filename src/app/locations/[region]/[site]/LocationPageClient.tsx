@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { TabBar, TabPanel } from "@/components/TabBar";
 import { Footer } from "@/components/Footer";
+import { LogSightingModal } from "@/components/LogSightingModal";
 import type { Location, Region } from "@/types";
 import type { LocationSpeciesWithDetails } from "./page";
 import { SpeciesTab } from "./SpeciesTab";
@@ -60,6 +61,8 @@ export function LocationPageClient({
   const [spottedIds, setSpottedIds] = useState<Set<string>>(new Set());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [sightingModalOpen, setSightingModalOpen] = useState(false);
+  const [preSelectedSpeciesId, setPreSelectedSpeciesId] = useState<string | null>(null);
 
   // Check auth + fetch sightings
   useEffect(() => {
@@ -89,6 +92,15 @@ export function LocationPageClient({
     }
     checkAuth();
   }, [location.id]);
+
+  const handleOpenSightingModal = useCallback((speciesId?: string) => {
+    setPreSelectedSpeciesId(speciesId ?? null);
+    setSightingModalOpen(true);
+  }, []);
+
+  const handleSightingSuccess = useCallback((speciesId: string) => {
+    setSpottedIds((prev) => new Set([...prev, speciesId]));
+  }, []);
 
   const skill = location.skill_level ? skillConfig[location.skill_level] : null;
 
@@ -222,6 +234,7 @@ export function LocationPageClient({
               isAuthenticated={isAuthenticated}
               authChecked={authChecked}
               locationName={location.name}
+              onLogSighting={handleOpenSightingModal}
             />
           </TabPanel>
 
@@ -306,6 +319,35 @@ export function LocationPageClient({
       </section>
 
       <Footer />
+
+      {/* Floating "Log a Sighting" button — authenticated users only */}
+      {isAuthenticated && (
+        <button
+          onClick={() => handleOpenSightingModal()}
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-coral hover:bg-coral-dark text-white font-semibold text-sm shadow-lg shadow-coral/30 transition-all hover:scale-105"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Log Sighting
+        </button>
+      )}
+
+      {/* Log Sighting Modal */}
+      <LogSightingModal
+        isOpen={sightingModalOpen}
+        onClose={() => setSightingModalOpen(false)}
+        onSuccess={handleSightingSuccess}
+        locationId={location.id}
+        locationName={location.name}
+        speciesList={speciesList.map(({ species }) => ({
+          id: species.id,
+          name: species.name,
+          scientificName: species.scientific_name,
+        }))}
+        preSelectedSpeciesId={preSelectedSpeciesId}
+      />
     </div>
   );
 }

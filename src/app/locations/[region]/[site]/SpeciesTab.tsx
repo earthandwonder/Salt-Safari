@@ -15,6 +15,7 @@ interface SpeciesTabProps {
   isAuthenticated: boolean;
   authChecked: boolean;
   locationName: string;
+  onLogSighting?: (speciesId?: string) => void;
 }
 
 type SeasonFilter = "all" | "in-season";
@@ -28,6 +29,7 @@ export function SpeciesTab({
   isAuthenticated,
   authChecked,
   locationName,
+  onLogSighting,
 }: SpeciesTabProps) {
   const [seasonFilter, setSeasonFilter] = useState<SeasonFilter>("all");
   const [likelihoodFilter, setLikelihoodFilter] = useState<LikelihoodFilter>("all");
@@ -72,9 +74,19 @@ export function SpeciesTab({
                 <span className="text-sm font-semibold text-deep">
                   {spottedCount} of {totalSpecies} spotted
                 </span>
-                <span className="text-xs text-slate-400">
-                  {totalSpecies > 0 ? Math.round((spottedCount / totalSpecies) * 100) : 0}%
-                </span>
+                <div className="flex items-center gap-3">
+                  {onLogSighting && (
+                    <button
+                      onClick={() => onLogSighting()}
+                      className="text-xs font-medium text-coral hover:text-coral-dark transition-colors"
+                    >
+                      + Log sighting
+                    </button>
+                  )}
+                  <span className="text-xs text-slate-400">
+                    {totalSpecies > 0 ? Math.round((spottedCount / totalSpecies) * 100) : 0}%
+                  </span>
+                </div>
               </div>
               <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                 <div
@@ -200,18 +212,38 @@ export function SpeciesTab({
               else if (locationSpecies.confidence >= 0.2) displayLikelihood = "occasional";
             }
 
+            const isSpotted = spottedIds.has(species.id);
+
             return (
-              <SpeciesCard
-                key={species.id}
-                slug={species.slug}
-                commonName={species.name}
-                scientificName={species.scientific_name}
-                heroImageUrl={species.hero_image_url}
-                likelihood={displayLikelihood}
-                activeMonths={activeMonthCount}
-                isInSeason={isInSeason}
-                isSpotted={spottedIds.has(species.id)}
-              />
+              <div key={species.id} className="relative group/card">
+                <SpeciesCard
+                  slug={species.slug}
+                  commonName={species.name}
+                  scientificName={species.scientific_name}
+                  heroImageUrl={species.hero_image_url}
+                  likelihood={displayLikelihood}
+                  activeMonths={activeMonthCount}
+                  isInSeason={isInSeason}
+                  isSpotted={isSpotted}
+                />
+                {/* Quick-log button — show for authenticated users on unspotted species */}
+                {isAuthenticated && !isSpotted && onLogSighting && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onLogSighting(species.id);
+                    }}
+                    className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover/card:opacity-100 transition-opacity z-10 hover:bg-coral hover:text-white text-slate-500"
+                    title={`Log ${species.name} sighting`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             );
           })}
         </ResponsiveGrid>
