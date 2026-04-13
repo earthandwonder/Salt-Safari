@@ -73,7 +73,7 @@ export function SpeciesPageClient({
       {/* ══════════════════════════════════════════
           HERO
          ══════════════════════════════════════════ */}
-      <section className="relative w-full min-h-[56vh] md:min-h-[52vh] flex items-end overflow-hidden">
+      <section className="relative w-full min-h-[36vh] md:min-h-[52vh] flex items-end overflow-hidden">
         {/* Background image or gradient */}
         {heroPhoto ? (
           <>

@@ -9,23 +9,16 @@ type InSeasonSpecies = {
   commonName: string;
   scientificName: string | null;
   heroImageUrl: string | null;
-  locationName: string;
-  regionSlug: string;
-  siteSlug: string;
-  isCharismatic: boolean;
-  isSeasonal: boolean; // active ≤8 months
+  isSeasonal: boolean;
   activeMonths: number;
   monthRange: string;
 };
 
-type FeaturedLocation = {
+type CollectionPreviewSpecies = {
   id: string;
-  name: string;
-  slug: string;
-  description: string | null;
+  commonName: string;
   heroImageUrl: string | null;
-  regionSlug: string;
-  speciesCount: number;
+  revealed: boolean;
 };
 
 /**
@@ -34,10 +27,12 @@ type FeaturedLocation = {
  */
 function dailySeedShuffle<T>(items: T[]): T[] {
   const today = new Date();
-  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  const seed =
+    today.getFullYear() * 10000 +
+    (today.getMonth() + 1) * 100 +
+    today.getDate();
   const arr = [...items];
 
-  // Simple seeded PRNG (mulberry32)
   let t = seed;
   function rand() {
     t = (t + 0x6d2b79f5) | 0;
@@ -57,33 +52,73 @@ function formatMonthRange(activeMonthNumbers: number[]): string {
   if (activeMonthNumbers.length === 0) return "Year-round";
   if (activeMonthNumbers.length >= 9) return "Year-round";
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const sorted = [...activeMonthNumbers].sort((a, b) => a - b);
   return `${monthNames[sorted[0] - 1]} — ${monthNames[sorted[sorted.length - 1] - 1]}`;
 }
 
+// Cabbage Tree Bay location slug — the MVP focus
+const CTB_SLUG = "cabbage-tree-bay";
+
 export default async function HomePage() {
   const supabase = await createClient();
-  const currentMonth = new Date().getMonth() + 1; // 1-indexed
+  const currentMonth = new Date().getMonth() + 1;
 
-  // --- Parallel data fetches ---
+  // --- Get Cabbage Tree Bay location ---
+  const { data: ctbLocation } = await supabase
+    .from("locations")
+    .select("id, name, slug, region_id")
+    .eq("slug", CTB_SLUG)
+    .single();
+
+  if (!ctbLocation) {
+    // Fallback if CTB isn't seeded yet — show minimal page
+    return (
+      <HomePageClient
+        speciesCount={0}
+        spottableCount={0}
+        inSeasonCount={0}
+        inSeasonSpecies={[]}
+        collectionPreviewSpecies={[]}
+      />
+    );
+  }
+
+  // --- Parallel data fetches scoped to Cabbage Tree Bay ---
   const [
-    { count: speciesCount },
-    { count: locationCount },
-    { count: regionCount },
-    { data: locations },
+    { data: locationSpeciesData },
     { data: seasonalityData },
   ] = await Promise.all([
-    supabase.from("species").select("*", { count: "exact", head: true }).eq("published", true),
-    supabase.from("locations").select("*", { count: "exact", head: true }).eq("published", true),
-    supabase.from("regions").select("*", { count: "exact", head: true }).eq("published", true),
-    // Featured locations
+    // All species at this location (published only, matching location page)
     supabase
-      .from("locations")
-      .select("id, name, slug, description, hero_image_url, region_id, region:region_id ( slug )")
-      .eq("published", true)
-      .order("name"),
-    // Species in season this month (common or occasional)
+      .from("location_species")
+      .select(`
+        id,
+        species_id,
+        is_spottable,
+        confidence,
+        total_observations,
+        species:species_id!inner (
+          id, name, scientific_name, slug, hero_image_url, is_charismatic, published
+        )
+      `)
+      .eq("location_id", ctbLocation.id)
+      .eq("species.published", true),
+
+    // Species in season this month
     supabase
       .from("species_seasonality")
       .select(`
@@ -94,14 +129,8 @@ export default async function HomePage() {
           id,
           species_id,
           location_id,
-          confidence,
-          total_observations,
           species:species_id (
             id, name, scientific_name, slug, hero_image_url, is_charismatic
-          ),
-          location:location_id (
-            id, name, slug, region_id,
-            region:region_id ( slug )
           )
         )
       `)
@@ -109,50 +138,30 @@ export default async function HomePage() {
       .in("likelihood", ["common", "occasional"]),
   ]);
 
-  // --- Fetch species counts per location ---
-  const locationIds = (locations ?? []).map((l) => l.id);
-  const featuredLocations: FeaturedLocation[] = [];
+  // --- Species counts at CTB ---
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allLS = (locationSpeciesData ?? []) as any[];
+  const speciesCount = allLS.length;
+  const spottableCount = allLS.filter((ls) => ls.is_spottable).length;
 
-  if (locationIds.length > 0) {
-    const { data: lsRows } = await supabase
-      .from("location_species")
-      .select("id, location_id")
-      .in("location_id", locationIds);
+  // --- Filter seasonality to CTB only ---
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ctbSeasonality = (seasonalityData ?? []).filter((row: any) => {
+    return row.location_species?.location_id === ctbLocation.id;
+  });
 
-    const countByLocation: Record<string, number> = {};
-    for (const ls of lsRows ?? []) {
-      countByLocation[ls.location_id] = (countByLocation[ls.location_id] ?? 0) + 1;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const loc of (locations ?? []) as any[]) {
-      featuredLocations.push({
-        id: loc.id,
-        name: loc.name,
-        slug: loc.slug,
-        description: loc.description,
-        heroImageUrl: loc.hero_image_url,
-        regionSlug: loc.region?.slug ?? "",
-        speciesCount: countByLocation[loc.id] ?? 0,
-      });
-    }
-  }
-
-  // --- Build In Season species list with priority fill ---
-  // First, collect all location_species IDs from this month's seasonality to get active month counts
+  // --- Get active month counts for in-season species ---
   const locationSpeciesIds = new Set<string>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const row of (seasonalityData ?? []) as any[]) {
+  for (const row of ctbSeasonality as any[]) {
     if (row.location_species_id) {
       locationSpeciesIds.add(row.location_species_id);
     }
   }
 
-  // Get active month counts for each location_species (how many months they're common/occasional)
   const activeMonthCounts: Record<string, number[]> = {};
   if (locationSpeciesIds.size > 0) {
     const lsIdArray = Array.from(locationSpeciesIds);
-    // Batch in groups of 200
     for (let i = 0; i < lsIdArray.length; i += 200) {
       const batch = lsIdArray.slice(i, i + 200);
       const { data: allMonths } = await supabase
@@ -170,21 +179,19 @@ export default async function HomePage() {
     }
   }
 
-  // Build the In Season list
+  // --- Build In Season species list ---
   const inSeasonSpecies: InSeasonSpecies[] = [];
   const seenSpeciesIds = new Set<string>();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const row of (seasonalityData ?? []) as any[]) {
+  for (const row of ctbSeasonality as any[]) {
     const ls = row.location_species;
     if (!ls) continue;
 
     const species = ls.species;
-    const location = ls.location;
-    if (!species || !location || !species.slug) continue;
-    if (!species.hero_image_url) continue; // Skip species without photos for homepage cards
+    if (!species || !species.slug) continue;
+    if (!species.hero_image_url) continue;
 
-    // Deduplicate by species ID — show each species only once (at its best location)
     if (seenSpeciesIds.has(species.id)) continue;
     seenSpeciesIds.add(species.id);
 
@@ -197,34 +204,58 @@ export default async function HomePage() {
       commonName: species.name,
       scientificName: species.scientific_name,
       heroImageUrl: species.hero_image_url,
-      locationName: location.name,
-      regionSlug: location.region?.slug ?? "",
-      siteSlug: location.slug,
-      isCharismatic: species.is_charismatic ?? false,
       isSeasonal,
       activeMonths: activeMonths.length,
       monthRange: formatMonthRange(activeMonths),
     });
   }
 
-  // Priority sort: (1) seasonal + charismatic, (2) seasonal, (3) charismatic year-round backfill
-  const tier1 = inSeasonSpecies.filter((s) => s.isSeasonal && s.isCharismatic);
-  const tier2 = inSeasonSpecies.filter((s) => s.isSeasonal && !s.isCharismatic);
-  const tier3 = inSeasonSpecies.filter((s) => !s.isSeasonal && s.isCharismatic);
+  // Priority sort
+  const tier1 = inSeasonSpecies.filter(
+    (s) => s.isSeasonal
+  );
+  const tier2 = inSeasonSpecies.filter(
+    (s) => !s.isSeasonal
+  );
 
-  const sorted = [
+  const sortedInSeason = [
     ...dailySeedShuffle(tier1),
     ...dailySeedShuffle(tier2),
-    ...dailySeedShuffle(tier3),
-  ].slice(0, 8); // Cap at 8 for the homepage row
+  ].slice(0, 8);
+
+  // --- Build collection preview species (12 spottable species, some "revealed") ---
+  const spottableSpecies = allLS.filter(
+    (ls) => ls.is_spottable && ls.species?.hero_image_url
+  );
+  const shuffledForCollection = dailySeedShuffle(spottableSpecies);
+  const collectionPreview = shuffledForCollection.slice(0, 12);
+
+  // Mark ~4 as "revealed" (the charismatic ones, or first 4)
+  const collectionPreviewSpecies: CollectionPreviewSpecies[] =
+    collectionPreview.map((ls, index) => ({
+      id: ls.species.id,
+      commonName: ls.species.name,
+      heroImageUrl: ls.species.hero_image_url,
+      revealed: index < 4, // First 4 revealed, rest silhouetted
+    }));
+
+  // Pad with placeholders if we don't have 12 species yet
+  while (collectionPreviewSpecies.length < 12) {
+    collectionPreviewSpecies.push({
+      id: `placeholder-${collectionPreviewSpecies.length}`,
+      commonName: "Unknown",
+      heroImageUrl: null,
+      revealed: false,
+    });
+  }
 
   return (
     <HomePageClient
-      speciesCount={speciesCount ?? 0}
-      locationCount={locationCount ?? 0}
-      regionCount={regionCount ?? 0}
-      inSeasonSpecies={sorted}
-      featuredLocations={featuredLocations}
+      speciesCount={speciesCount}
+      spottableCount={spottableCount}
+      inSeasonCount={inSeasonSpecies.length}
+      inSeasonSpecies={sortedInSeason}
+      collectionPreviewSpecies={collectionPreviewSpecies}
     />
   );
 }

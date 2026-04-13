@@ -106,7 +106,7 @@ export default function SignUpPage() {
     return (
       <div className="min-h-screen bg-sand flex items-center justify-center px-6">
         <div className="w-full max-w-md text-center">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-8">
             <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg
                 className="w-6 h-6 text-emerald-600"
@@ -143,7 +143,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-sand flex items-center justify-center px-6">
+    <div className="min-h-screen bg-sand flex items-center justify-center px-4 sm:px-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
@@ -159,7 +159,7 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-8">
           <button
             type="button"
             onClick={handleGoogleSignUp}
@@ -222,7 +222,7 @@ export default function SignUpPage() {
                 Username
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs sm:text-sm text-slate-400">
                   saltsafari.app/u/
                 </span>
                 <input
@@ -233,7 +233,7 @@ export default function SignUpPage() {
                   required
                   minLength={3}
                   maxLength={30}
-                  className="w-full rounded-xl border border-slate-200 pl-[136px] pr-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
+                  className="w-full rounded-xl border border-slate-200 pl-[118px] sm:pl-[136px] pr-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
                   placeholder="your-username"
                 />
               </div>

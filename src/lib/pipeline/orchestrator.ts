@@ -59,8 +59,14 @@ function isValidSpeciesRecord(record: RawSpeciesRecord): boolean {
   if (!name) return false;
   if (name === "Not supplied" || name === "not supplied") return false;
   if (!name.includes(" ")) return false; // genus-only
+  if (BLACKLISTED_SPECIES.has(name.toLowerCase())) return false;
   return true;
 }
+
+// --- Species blacklist (never ingest these species) ---
+const BLACKLISTED_SPECIES = new Set([
+  "carcharhinus leucas", // Bull shark — acoustic receiver detections, not visual sightings
+]);
 
 // --- Spottable classification ---
 
