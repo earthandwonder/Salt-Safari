@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -14,6 +14,9 @@ const NAV_LINKS = [
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
+  const loginHref = pathname && pathname !== "/" ? `/login?redirectTo=${encodeURIComponent(pathname)}` : "/login";
+  const signupHref = pathname && pathname !== "/" ? `/signup?redirectTo=${encodeURIComponent(pathname)}` : "/signup";
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -117,14 +120,14 @@ export default function Header() {
 
           {!loading && (
             <>
+              <Link
+                href="/log"
+                className="text-white/70 hover:text-white text-sm transition-colors"
+              >
+                My Log
+              </Link>
               {user ? (
                 <div className="flex items-center gap-4">
-                  <Link
-                    href="/log"
-                    className="text-white/70 hover:text-white text-sm transition-colors"
-                  >
-                    My Log
-                  </Link>
                   <Link
                     href="/alerts"
                     className="text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1"
@@ -155,13 +158,13 @@ export default function Header() {
               ) : (
                 <div className="flex items-center gap-3">
                   <Link
-                    href="/login"
+                    href={loginHref}
                     className="text-white/70 hover:text-white text-sm transition-colors"
                   >
                     Sign in
                   </Link>
                   <Link
-                    href="/signup"
+                    href={signupHref}
                     className="bg-coral hover:bg-coral-dark text-white px-5 py-2 rounded-full text-sm font-medium transition-colors"
                   >
                     Sign up
@@ -216,15 +219,15 @@ export default function Header() {
 
           {!loading && (
             <>
+              <Link
+                href="/log"
+                className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                My Log
+              </Link>
               {user ? (
                 <>
-                  <Link
-                    href="/log"
-                    className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    My Log
-                  </Link>
                   <Link
                     href="/alerts"
                     className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
@@ -245,14 +248,14 @@ export default function Header() {
               ) : (
                 <>
                   <Link
-                    href="/login"
+                    href={loginHref}
                     className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
                     onClick={() => setMenuOpen(false)}
                   >
                     Sign in
                   </Link>
                   <Link
-                    href="/signup"
+                    href={signupHref}
                     className="block mt-4 bg-coral hover:bg-coral-dark text-white text-center px-5 py-3 rounded-full font-medium transition-colors"
                     onClick={() => setMenuOpen(false)}
                   >

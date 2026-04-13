@@ -131,6 +131,10 @@ export function LogSightingModal({
 
       setSuccess(true);
       onSuccess(selectedSpeciesId);
+      // Auto-close modal after brief success feedback
+      setTimeout(() => {
+        onClose();
+      }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -216,7 +220,7 @@ export function LogSightingModal({
                   }}
                   onFocus={() => setDropdownOpen(true)}
                   placeholder="Search for a species..."
-                  className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-white border border-slate-200 text-base sm:text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400"
                 />
               </div>
 
@@ -258,7 +262,7 @@ export function LogSightingModal({
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 max={new Date().toISOString().split("T")[0]}
-                className="w-full px-3 py-2.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400"
+                className="w-full px-3 py-2.5 rounded-lg bg-white border border-slate-200 text-base sm:text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400"
               />
             </div>
 
@@ -301,7 +305,7 @@ export function LogSightingModal({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="e.g. Spotted under a rocky ledge at 6m..."
-                className="w-full px-3 py-2.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 resize-none"
+                className="w-full px-3 py-2.5 rounded-lg bg-white border border-slate-200 text-base sm:text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 resize-none"
               />
             </div>
 

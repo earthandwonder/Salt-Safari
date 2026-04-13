@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { SpeciesCard } from "@/components/SpeciesCard";
 import { ResponsiveGrid } from "@/components/ResponsiveGrid";
 import type { Likelihood } from "@/components/LikelihoodPill";
@@ -30,9 +30,12 @@ export function SpeciesTab({
   locationId,
   onAlertSubscribe,
 }: SpeciesTabProps) {
+  const BATCH_SIZE = 24;
   const [seasonFilter, setSeasonFilter] = useState<SeasonFilter>("all");
   const [likelihoodFilter, setLikelihoodFilter] = useState<LikelihoodFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const filteredSpecies = useMemo(() => {
     let result = speciesList;
@@ -59,6 +62,37 @@ export function SpeciesTab({
 
     return result;
   }, [speciesList, seasonFilter, likelihoodFilter, searchQuery]);
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [seasonFilter, likelihoodFilter, searchQuery]);
+
+  const visibleSpecies = useMemo(
+    () => filteredSpecies.slice(0, visibleCount),
+    [filteredSpecies, visibleCount]
+  );
+
+  const hasMore = visibleCount < filteredSpecies.length;
+
+  // Load more when sentinel enters viewport
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredSpecies.length));
+  }, [filteredSpecies.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
 
   return (
     <div>
@@ -142,8 +176,9 @@ export function SpeciesTab({
 
       {/* ── Species Grid ───────────────────────────── */}
       {filteredSpecies.length > 0 ? (
+        <>
         <ResponsiveGrid columns={{ mobile: 2, tablet: 3, desktop: 4 }}>
-          {filteredSpecies.map(({ species, locationSpecies, currentMonthLikelihood, activeMonthCount, isInSeason }) => {
+          {visibleSpecies.map(({ species, locationSpecies, currentMonthLikelihood, activeMonthCount, isInSeason }) => {
             // Determine display likelihood: use current month if available, otherwise derive from confidence
             let displayLikelihood: Likelihood = "rare";
             if (currentMonthLikelihood) {
@@ -197,6 +232,10 @@ export function SpeciesTab({
             );
           })}
         </ResponsiveGrid>
+        {hasMore && (
+          <div ref={sentinelRef} className="h-px" aria-hidden="true" />
+        )}
+        </>
       ) : (
         <div className="rounded-2xl bg-white border border-slate-100 p-12 text-center">
           <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-50 flex items-center justify-center">

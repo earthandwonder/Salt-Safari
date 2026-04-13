@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { TabBar, TabPanel } from "@/components/TabBar";
 import { Footer } from "@/components/Footer";
@@ -64,6 +65,7 @@ export function LocationPageClient({
   inSeasonCount,
   regionSlug,
 }: LocationPageClientProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("species");
   const [spottedIds, setSpottedIds] = useState<Set<string>>(new Set());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -116,9 +118,13 @@ export function LocationPageClient({
   }, [location.id]);
 
   const handleOpenSightingModal = useCallback((speciesId?: string) => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirectTo=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
     setPreSelectedSpeciesId(speciesId ?? null);
     setSightingModalOpen(true);
-  }, []);
+  }, [isAuthenticated, router]);
 
   const handleSightingSuccess = useCallback((speciesId: string) => {
     setSpottedIds((prev) => new Set([...prev, speciesId]));
@@ -137,7 +143,7 @@ export function LocationPageClient({
   const skill = location.skill_level ? skillConfig[location.skill_level] : null;
 
   return (
-    <div className="min-h-screen bg-sand">
+    <div className="min-h-screen bg-sand overflow-x-hidden">
       <Header />
 
       {/* ══════════════════════════════════════════
@@ -166,18 +172,18 @@ export function LocationPageClient({
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 pb-10 pt-28 md:pb-14">
           {/* Breadcrumb */}
           <nav className="mb-3" aria-label="Breadcrumb">
-            <ol className="flex items-center gap-2 text-sm text-white/60">
-              <li>
+            <ol className="flex items-center gap-2 text-sm text-white/60 overflow-hidden">
+              <li className="shrink-0">
                 <Link href="/locations" className="hover:text-white/90 transition-colors">
                   Locations
                 </Link>
               </li>
-              <li aria-hidden="true">
+              <li aria-hidden="true" className="shrink-0">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </li>
-              <li>
+              <li className="shrink-0">
                 <Link
                   href={`/locations/${regionSlug}`}
                   className="hover:text-white/90 transition-colors"
@@ -185,12 +191,12 @@ export function LocationPageClient({
                   {region.name}
                 </Link>
               </li>
-              <li aria-hidden="true">
+              <li aria-hidden="true" className="shrink-0">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </li>
-              <li className="text-white/90 font-medium">{location.name}</li>
+              <li className="text-white/90 font-medium truncate">{location.name}</li>
             </ol>
           </nav>
 
@@ -366,19 +372,17 @@ export function LocationPageClient({
 
       <Footer />
 
-      {/* Floating "Log a Sighting" button — authenticated users only */}
-      {isAuthenticated && (
-        <button
-          onClick={() => handleOpenSightingModal()}
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-coral hover:bg-coral-dark text-white font-semibold text-sm shadow-lg shadow-coral/30 transition-all hover:scale-105"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          Log Sighting
-        </button>
-      )}
+      {/* Floating "Log a Sighting" button — always visible, redirects to login if not authenticated */}
+      <button
+        onClick={() => handleOpenSightingModal()}
+        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-coral hover:bg-coral-dark text-white font-semibold text-sm shadow-lg shadow-coral/30 transition-all hover:scale-105"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Log Sighting
+      </button>
 
       {/* Log Sighting Modal */}
       <LogSightingModal

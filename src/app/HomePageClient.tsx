@@ -23,12 +23,22 @@ type CollectionPreviewSpecies = {
   revealed: boolean;
 };
 
+type UserLatestLog = {
+  speciesCount: number;
+  locationName: string;
+  date: string;
+  speciesImages: string[];
+};
+
 interface HomePageClientProps {
   speciesCount: number;
   spottableCount: number;
   inSeasonCount: number;
   inSeasonSpecies: InSeasonSpecies[];
   collectionPreviewSpecies: CollectionPreviewSpecies[];
+  userSpottedCount?: number;
+  userLatestLog?: UserLatestLog | null;
+  isLoggedIn?: boolean;
 }
 
 export function HomePageClient({
@@ -37,7 +47,12 @@ export function HomePageClient({
   inSeasonCount,
   inSeasonSpecies,
   collectionPreviewSpecies,
+  userSpottedCount,
+  userLatestLog,
+  isLoggedIn,
 }: HomePageClientProps) {
+  const spottedCount = isLoggedIn ? (userSpottedCount ?? 0) : 0;
+  const progressPercent = spottableCount > 0 ? Math.round((spottedCount / spottableCount) * 100) : 0;
   return (
     <main>
       <Header />
@@ -212,9 +227,14 @@ export function HomePageClient({
 
             {/* Alert teaser */}
             <div className="mt-8 bg-deep/5 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <p className="font-display text-lg font-semibold text-deep">
-                Got a species you&apos;re excited about? We&apos;ll tell you when they&apos;re in town
-              </p>
+              <div>
+                <p className="font-display text-lg font-semibold text-deep">
+                  Got a species you&apos;re excited about?
+                </p>
+                <p className="text-sm text-slate-500 mt-1">
+                  We&apos;ll tell you when they&apos;re in town
+                </p>
+              </div>
               <Link
                 href="/alerts"
                 className="bg-coral hover:bg-coral-dark text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
@@ -246,19 +266,22 @@ export function HomePageClient({
             <div className="flex items-baseline justify-between mb-2">
               <p className="text-sm font-medium text-slate-600">
                 <span className="text-deep font-display text-lg font-bold">
-                  0
+                  {spottedCount}
                 </span>{" "}
                 of {spottableCount.toLocaleString()} spotted
               </p>
               <Link
-                href="/signup"
+                href={isLoggedIn ? "/log" : "/signup"}
                 className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
               >
-                Sign up
+                Log a sighting
               </Link>
             </div>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full w-0 bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-1000" />
+              <div
+                className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-1000"
+                style={{ width: `${Math.max(progressPercent, isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
+              />
             </div>
           </div>
 
@@ -312,41 +335,71 @@ export function HomePageClient({
           {/* Trip report mockup */}
           <div className="mt-10 flex flex-col md:flex-row items-center gap-8">
             {/* Trip card preview */}
-            <div className="w-full md:w-auto md:flex-shrink-0">
+            <div className="order-2 md:order-1 w-full md:w-auto md:flex-shrink-0">
               <div className="bg-deep rounded-2xl p-5 md:p-6 max-w-sm mx-auto md:mx-0 shadow-xl shadow-deep/20">
                 <p className="text-white/40 text-xs tracking-wider uppercase mb-3">
-                  Shareable trip report
+                  {isLoggedIn && userLatestLog ? "Your latest trip" : "Shareable trip report"}
                 </p>
                 <p className="font-display text-lg font-semibold text-white mb-1">
-                  You saw 8 species
+                  {isLoggedIn && userLatestLog
+                    ? `You saw ${userLatestLog.speciesCount} species`
+                    : "You saw 8 species"}
                 </p>
                 <p className="text-white/50 text-sm mb-4">
-                  Cabbage Tree Bay &middot; April 13, 2026
+                  {isLoggedIn && userLatestLog
+                    ? `${userLatestLog.locationName} \u00B7 ${new Date(userLatestLog.date).toLocaleDateString("en-AU", { month: "long", day: "numeric", year: "numeric" })}`
+                    : "Cabbage Tree Bay \u00B7 April 13, 2026"}
                 </p>
 
                 {/* Avatar stack of species */}
                 <div className="flex items-center mb-4">
                   <div className="flex -space-x-2">
-                    {collectionPreviewSpecies
-                      .filter((s) => s.revealed && s.heroImageUrl)
-                      .slice(0, 5)
-                      .map((s, i) => (
-                        <div
-                          key={s.id}
-                          className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
-                          style={{ zIndex: 5 - i }}
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={s.heroImageUrl!}
-                            alt={s.commonName}
-                            className="w-full h-full object-cover"
-                          />
+                    {isLoggedIn && userLatestLog ? (
+                      <>
+                        {userLatestLog.speciesImages.slice(0, 5).map((url, i) => (
+                          <div
+                            key={i}
+                            className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
+                            style={{ zIndex: 5 - i }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={url}
+                              alt="Species"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ))}
+                        {userLatestLog.speciesCount > 5 && (
+                          <div className="w-9 h-9 rounded-full border-2 border-deep bg-white/10 flex items-center justify-center text-white/50 text-xs font-medium">
+                            +{userLatestLog.speciesCount - 5}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {collectionPreviewSpecies
+                          .filter((s) => s.revealed && s.heroImageUrl)
+                          .slice(0, 5)
+                          .map((s, i) => (
+                            <div
+                              key={s.id}
+                              className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
+                              style={{ zIndex: 5 - i }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={s.heroImageUrl!}
+                                alt={s.commonName}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        <div className="w-9 h-9 rounded-full border-2 border-deep bg-white/10 flex items-center justify-center text-white/50 text-xs font-medium">
+                          +3
                         </div>
-                      ))}
-                    <div className="w-9 h-9 rounded-full border-2 border-deep bg-white/10 flex items-center justify-center text-white/50 text-xs font-medium">
-                      +3
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -355,30 +408,31 @@ export function HomePageClient({
                   <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"
-                      style={{ width: "17%" }}
+                      style={{ width: `${Math.max(progressPercent, isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
                     />
                   </div>
                   <span className="text-white/40 text-xs whitespace-nowrap">
-                    8 of 47
+                    {spottedCount} of {spottableCount}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* CTA text */}
-            <div className="text-center md:text-left">
+            <div className="order-1 md:order-2 text-center md:text-left">
               <h3 className="font-display text-2xl font-semibold text-deep mb-2">
                 Every dive tells a story.
               </h3>
               <p className="text-slate-500 mb-6 max-w-md">
-                Log what you see, track your collection, and share a
-                beautiful trip report with friends. Free — no catches.
+                {isLoggedIn
+                  ? "Keep logging what you see and watch your collection grow. Share your trip reports with friends."
+                  : "Log what you see, track your collection, and share a beautiful trip report with friends. Free \u2014 no catches."}
               </p>
               <Link
-                href="/signup"
+                href={isLoggedIn ? "/log" : "/signup"}
                 className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
               >
-                Create your free account
+                Log a sighting
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -404,7 +458,7 @@ export function HomePageClient({
       <section className="bg-slate-50 section-padding overflow-hidden">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           {/* Phone mockup */}
-          <div className="relative flex justify-center">
+          <div className="relative flex justify-center order-2 md:order-1">
             <div className="w-[280px] h-[560px] bg-deep rounded-[3rem] p-3 shadow-2xl shadow-deep/30 relative">
               <div className="w-full h-full bg-white rounded-[2.3rem] overflow-hidden flex flex-col">
                 {/* Screen header */}
@@ -523,7 +577,7 @@ export function HomePageClient({
           </div>
 
           {/* Text */}
-          <div>
+          <div className="order-1 md:order-2">
             <p className="text-teal-600 text-sm font-medium tracking-wider uppercase mb-3">
               Free to use
             </p>

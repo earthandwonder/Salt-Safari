@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { SpeciesCard } from "@/components/SpeciesCard";
 import { ResponsiveGrid } from "@/components/ResponsiveGrid";
@@ -27,7 +27,10 @@ export function SpottedTab({
   locationName,
   onLogSighting,
 }: SpottedTabProps) {
+  const BATCH_SIZE = 24;
   const spottedCount = spottedIds.size;
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Sort: spotted first, then by observation count
   const sortedSpecies = useMemo(() => {
@@ -39,6 +42,31 @@ export function SpottedTab({
       return (b.locationSpecies.total_observations ?? 0) - (a.locationSpecies.total_observations ?? 0);
     });
   }, [speciesList, spottedIds]);
+
+  const visibleSpecies = useMemo(
+    () => sortedSpecies.slice(0, visibleCount),
+    [sortedSpecies, visibleCount]
+  );
+
+  const hasMore = visibleCount < sortedSpecies.length;
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, sortedSpecies.length));
+  }, [sortedSpecies.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadMore]);
 
   return (
     <div>
@@ -73,6 +101,15 @@ export function SpottedTab({
                   }}
                 />
               </div>
+              <Link
+                href="/log"
+                className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-teal-600 transition-colors mt-2.5"
+              >
+                View all your sightings
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </Link>
             </div>
           ) : (
             <Link
@@ -102,7 +139,7 @@ export function SpottedTab({
 
       {/* ── Checklist grid ───────────────────────────── */}
       <ResponsiveGrid columns={{ mobile: 2, tablet: 3, desktop: 4 }}>
-        {sortedSpecies.map(({ species, locationSpecies, currentMonthLikelihood, activeMonthCount, isInSeason }) => {
+        {visibleSpecies.map(({ species, locationSpecies, currentMonthLikelihood, activeMonthCount, isInSeason }) => {
           let displayLikelihood: Likelihood = "rare";
           if (currentMonthLikelihood) {
             displayLikelihood = currentMonthLikelihood;
@@ -125,15 +162,15 @@ export function SpottedTab({
                 isInSeason={isInSeason}
                 isSpotted={isSpotted}
               />
-              {/* Quick-log button — authenticated, unspotted only */}
-              {isAuthenticated && !isSpotted && onLogSighting && (
+              {/* Quick-log button — unspotted only, redirects to login if not authenticated */}
+              {!isSpotted && onLogSighting && (
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     onLogSighting(species.id);
                   }}
-                  className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover/card:opacity-100 transition-opacity z-10 hover:bg-coral hover:text-white text-slate-500"
+                  className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md z-10 hover:bg-coral hover:text-white text-slate-500 transition-colors"
                   title={`Log ${species.name} sighting`}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -146,6 +183,9 @@ export function SpottedTab({
           );
         })}
       </ResponsiveGrid>
+      {hasMore && (
+        <div ref={sentinelRef} className="h-px" aria-hidden="true" />
+      )}
     </div>
   );
 }

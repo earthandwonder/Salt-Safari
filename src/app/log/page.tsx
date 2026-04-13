@@ -49,7 +49,7 @@ export default function SightingLogPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.replace("/login");
+        router.replace("/login?redirectTo=%2Flog");
         return;
       }
       setAuthChecked(true);
@@ -292,10 +292,6 @@ function TripCard({ trip }: { trip: Trip }) {
   const speciesCount = trip.sightings.length;
   const locationHref = `/locations/${trip.regionSlug}/${trip.locationSlug}`;
 
-  // Show up to 8 species thumbnails
-  const thumbnails = trip.sightings.slice(0, 8);
-  const overflowCount = speciesCount - thumbnails.length;
-
   return (
     <div className="rounded-xl bg-white border border-slate-100 p-5 md:p-6 hover:border-slate-200 transition-colors">
       {/* Header row */}
@@ -325,16 +321,16 @@ function TripCard({ trip }: { trip: Trip }) {
         </span>
       </div>
 
-      {/* Thumbnails row */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {thumbnails.map((s) => (
+      {/* Species list */}
+      <div className="divide-y divide-slate-100">
+        {trip.sightings.map((s) => (
           <Link
             key={s.id}
             href={`/species/${s.speciesSlug}`}
-            className="group/thumb relative"
-            title={s.speciesName}
+            className="group/row flex items-start gap-3 md:gap-4 py-3 first:pt-0"
           >
-            <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border-2 border-white shadow-sm group-hover/thumb:border-teal-300 transition-colors">
+            {/* Image */}
+            <div className="relative w-28 h-28 md:w-32 md:h-32 shrink-0 rounded-xl overflow-hidden shadow-sm group-hover/row:ring-2 group-hover/row:ring-teal-300 transition-all">
               {s.heroImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -346,27 +342,32 @@ function TripCard({ trip }: { trip: Trip }) {
               ) : (
                 <div className="w-full h-full photo-placeholder-species" />
               )}
+              {s.quantity > 1 && (
+                <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/60 text-white text-[11px] font-bold leading-none backdrop-blur-sm">
+                  &times;{s.quantity}
+                </span>
+              )}
             </div>
-            {s.quantity > 1 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-deep text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
-                {s.quantity}
-              </span>
-            )}
+
+            {/* Details */}
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold text-deep group-hover/row:text-teal-700 transition-colors leading-tight">
+                {s.speciesName}
+              </p>
+              {s.scientificName && (
+                <p className="text-sm text-slate-400 italic truncate mt-0.5">
+                  {s.scientificName}
+                </p>
+              )}
+              {s.notes && (
+                <p className="text-xs text-slate-400 mt-1.5 line-clamp-3">
+                  &ldquo;{s.notes}&rdquo;
+                </p>
+              )}
+            </div>
           </Link>
         ))}
-        {overflowCount > 0 && (
-          <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-semibold text-slate-500">
-            +{overflowCount}
-          </div>
-        )}
       </div>
-
-      {/* Notes preview — show first sighting with notes */}
-      {trip.sightings.some((s) => s.notes) && (
-        <p className="mt-3 text-xs text-slate-400 italic truncate">
-          &ldquo;{trip.sightings.find((s) => s.notes)?.notes}&rdquo;
-        </p>
-      )}
     </div>
   );
 }

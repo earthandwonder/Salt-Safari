@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const USERNAME_REGEX = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
@@ -17,7 +17,17 @@ function slugifyUsername(input: string): string {
 }
 
 export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") ?? "/";
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
@@ -97,7 +107,7 @@ export default function SignUpPage() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
       },
     });
   }
@@ -298,7 +308,7 @@ export default function SignUpPage() {
         <p className="text-center text-sm text-slate-500 mt-6">
           Already have an account?{" "}
           <Link
-            href="/login"
+            href={redirectTo !== "/" ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : "/login"}
             className="text-teal-600 hover:text-teal-700 font-medium"
           >
             Sign in

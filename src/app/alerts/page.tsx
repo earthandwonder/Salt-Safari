@@ -45,7 +45,7 @@ export default function AlertsPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push("/login");
+        router.push("/login?redirectTo=%2Falerts");
         return;
       }
 

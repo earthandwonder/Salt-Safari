@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { HomePageClient } from "./HomePageClient";
 
-export const revalidate = 3600; // ISR: revalidate every hour
+export const dynamic = "force-dynamic"; // needs auth check per request
 
 type InSeasonSpecies = {
   speciesId: string;
@@ -223,20 +223,75 @@ export default async function HomePage() {
     ...dailySeedShuffle(tier2),
   ].slice(0, 8);
 
+  // --- Check if user is logged in and fetch their sighting data ---
+  const { data: { user } } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
+  let userSpottedSpeciesIds: Set<string> = new Set();
+  let userSpottedCount = 0;
+  let userLatestLog: { speciesCount: number; locationName: string; date: string; speciesImages: string[] } | null = null;
+
+  if (user) {
+    // Fetch all distinct species the user has spotted at CTB
+    const { data: userSightings } = await supabase
+      .from("sightings")
+      .select("species_id, sighted_at, location_id, species:species_id (hero_image_url), locations:location_id (name)")
+      .eq("user_id", user.id)
+      .eq("location_id", ctbLocation.id)
+      .order("sighted_at", { ascending: false });
+
+    if (userSightings && userSightings.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sightings = userSightings as any[];
+      // Distinct species spotted at CTB
+      for (const s of sightings) {
+        userSpottedSpeciesIds.add(s.species_id);
+      }
+      userSpottedCount = userSpottedSpeciesIds.size;
+
+      // Latest log date — group sightings by date to find the most recent "session"
+      const latestDate = sightings[0].sighted_at;
+      const latestSession = sightings.filter((s) => s.sighted_at === latestDate);
+      const latestSpeciesImages = latestSession
+        .map((s) => s.species?.hero_image_url)
+        .filter((url: string | null): url is string => !!url);
+      const locationName = latestSession[0].locations?.name ?? "Cabbage Tree Bay";
+
+      userLatestLog = {
+        speciesCount: latestSession.length,
+        locationName,
+        date: latestDate,
+        speciesImages: latestSpeciesImages,
+      };
+    }
+  }
+
   // --- Build collection preview species (12 spottable species, some "revealed") ---
   const spottableSpecies = allLS.filter(
     (ls) => ls.is_spottable && ls.species?.hero_image_url
   );
-  const shuffledForCollection = dailySeedShuffle(spottableSpecies);
-  const collectionPreview = shuffledForCollection.slice(0, 12);
 
-  // Mark ~4 as "revealed" (the charismatic ones, or first 4)
+  let collectionPreview;
+  if (isLoggedIn && userSpottedSpeciesIds.size > 0) {
+    // Put the user's spotted species first, then fill remaining slots with unspotted
+    const spotted = spottableSpecies.filter((ls) => userSpottedSpeciesIds.has(ls.species.id));
+    const unspotted = spottableSpecies.filter((ls) => !userSpottedSpeciesIds.has(ls.species.id));
+    const shuffledSpotted = dailySeedShuffle(spotted);
+    const shuffledUnspotted = dailySeedShuffle(unspotted);
+    collectionPreview = [...shuffledSpotted, ...shuffledUnspotted].slice(0, 12);
+  } else {
+    const shuffledForCollection = dailySeedShuffle(spottableSpecies);
+    collectionPreview = shuffledForCollection.slice(0, 12);
+  }
+
   const collectionPreviewSpecies: CollectionPreviewSpecies[] =
     collectionPreview.map((ls, index) => ({
       id: ls.species.id,
       commonName: ls.species.name,
       heroImageUrl: ls.species.hero_image_url,
-      revealed: index < 4, // First 4 revealed, rest silhouetted
+      revealed: isLoggedIn
+        ? userSpottedSpeciesIds.has(ls.species.id)
+        : index < 4,
     }));
 
   // Pad with placeholders if we don't have 12 species yet
@@ -256,6 +311,9 @@ export default async function HomePage() {
       inSeasonCount={inSeasonSpecies.length}
       inSeasonSpecies={sortedInSeason}
       collectionPreviewSpecies={collectionPreviewSpecies}
+      userSpottedCount={userSpottedCount}
+      userLatestLog={userLatestLog}
+      isLoggedIn={isLoggedIn}
     />
   );
 }
