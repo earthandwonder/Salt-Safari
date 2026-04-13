@@ -39,6 +39,7 @@ export default function SightingLogPage() {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
   const [totalSpeciesCount, setTotalSpeciesCount] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -53,6 +54,7 @@ export default function SightingLogPage() {
         return;
       }
       setAuthChecked(true);
+      setUserId(user.id);
 
       // Fetch all sightings
       const { data: sightings } = await supabase
@@ -276,7 +278,7 @@ export default function SightingLogPage() {
           /* ── Trip cards ───────────────────────── */
           <div className="space-y-4">
             {trips.map((trip) => (
-              <TripCard key={trip.key} trip={trip} />
+              <TripCard key={trip.key} trip={trip} userId={userId} />
             ))}
           </div>
         )}
@@ -287,10 +289,11 @@ export default function SightingLogPage() {
   );
 }
 
-function TripCard({ trip }: { trip: Trip }) {
+function TripCard({ trip, userId }: { trip: Trip; userId: string | null }) {
   const formattedDate = formatDate(trip.date);
   const speciesCount = trip.sightings.length;
   const locationHref = `/locations/${trip.regionSlug}/${trip.locationSlug}`;
+  const tripHref = userId ? `/trips/${userId}-${trip.locationSlug}-${trip.date}` : null;
 
   return (
     <div className="rounded-xl bg-white border border-slate-100 p-5 md:p-6 hover:border-slate-200 transition-colors">
@@ -368,6 +371,47 @@ function TripCard({ trip }: { trip: Trip }) {
           </Link>
         ))}
       </div>
+
+      {/* Trip detail link */}
+      {tripHref && (
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3">
+          <Link
+            href={tripHref}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
+          >
+            View trip report
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </Link>
+          <span className="text-slate-200">|</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const url = `${window.location.origin}${tripHref}`;
+              if (navigator.share) {
+                navigator.share({
+                  title: `${speciesCount} species at ${trip.locationName}`,
+                  url,
+                }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(url).catch(() => {});
+              }
+            }}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-teal-600 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+            Share
+          </button>
+        </div>
+      )}
     </div>
   );
 }
