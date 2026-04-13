@@ -152,11 +152,13 @@ async function getTripData(tripId: string): Promise<TripData | null> {
   }
 
   // 7. Spottable species at this location (for progress bar)
+  // Must match location page logic: only count species that are also published
   const { count: totalSpeciesAtLocation } = await supabase
     .from("location_species")
-    .select("id", { count: "exact", head: true })
+    .select("id, species!inner(id)", { count: "exact", head: true })
     .eq("location_id", location.id)
-    .eq("is_spottable", true);
+    .eq("is_spottable", true)
+    .eq("species.published", true);
 
   // 8. Build sightings list
   const tripSightings: TripSighting[] = sightings.map((s) => {

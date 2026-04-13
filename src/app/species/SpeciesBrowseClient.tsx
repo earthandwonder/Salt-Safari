@@ -134,13 +134,16 @@ export function SpeciesBrowseClient({
   return (
     <>
       {/* Hero / Header */}
-      <section className="bg-sand pt-24 pb-12 md:pt-32 md:pb-16">
-        <div className="container mx-auto px-4 md:px-6">
+      <section className="relative w-full overflow-hidden">
+        <div className="absolute inset-0 hero-gradient">
+          <div className="caustic-overlay" />
+        </div>
+        <div className="relative z-10 container mx-auto px-4 md:px-6 pt-28 pb-12 md:pt-32 md:pb-16">
           <div className="max-w-2xl">
-            <h1 className="font-display text-3xl md:text-5xl font-semibold text-deep tracking-tight">
+            <h1 className="font-display text-3xl md:text-5xl font-semibold text-white tracking-tight">
               All Species
             </h1>
-            <p className="mt-2 text-slate-500 text-lg">
+            <p className="mt-2 text-white/60 text-lg">
               {totalCount.toLocaleString()} marine species across Australia
             </p>
           </div>
@@ -148,7 +151,7 @@ export function SpeciesBrowseClient({
           {/* Search */}
           <div className="mt-6 max-w-md relative">
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
               xmlns="http://www.w3.org/2000/svg"
               width="18"
               height="18"
@@ -171,7 +174,7 @@ export function SpeciesBrowseClient({
                 setPage(1);
                 updateUrl({ q: e.target.value || null, page: null });
               }}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 bg-white text-deep placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-coral/40 focus:border-coral transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-coral/40 focus:border-coral backdrop-blur-sm transition-colors"
             />
           </div>
         </div>

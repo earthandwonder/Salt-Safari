@@ -20,22 +20,36 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
 
-    // Get initial session
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      if (user) {
+        const { data } = await supabase
+          .from("users")
+          .select("username")
+          .eq("id", user.id)
+          .single();
+        setUsername(data?.username ?? null);
+      }
       setLoading(false);
-    });
+    }
+
+    loadUser();
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (!session?.user) {
+        setUsername(null);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -66,7 +80,6 @@ export default function Header() {
 
   const displayName =
     user?.user_metadata?.display_name || user?.email?.split("@")[0];
-  const username = user?.user_metadata?.username as string | undefined;
 
   return (
     <header
@@ -139,7 +152,7 @@ export default function Header() {
                     Alerts
                   </Link>
                   <Link
-                    href="/profile"
+                    href={username ? `/u/${username}` : "/log"}
                     className="text-white/70 hover:text-white text-sm transition-colors"
                   >
                     My Profile
@@ -198,10 +211,10 @@ export default function Header() {
       {/* Mobile menu */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          menuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0"
+          menuOpen ? "max-h-[32rem] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <div className="px-6 pb-6 space-y-1">
+        <div className="px-6 pt-2 pb-8 space-y-1">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -232,7 +245,7 @@ export default function Header() {
                     Alerts
                   </Link>
                   <Link
-                    href="/profile"
+                    href={username ? `/u/${username}` : "/log"}
                     className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
                     onClick={() => setMenuOpen(false)}
                   >

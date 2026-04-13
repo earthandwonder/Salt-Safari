@@ -954,7 +954,7 @@
 
 ## Session 19 — Homepage Simplification, Trip Polish, Spottable Counts, Pricing Model Update
 **Date:** 2026-04-14
-**Status:** In progress (uncommitted changes)
+**Status:** Complete
 
 ### What was built
 
@@ -975,29 +975,58 @@
   - Fetches current-month likelihood for each species at the trip location via `species_seasonality`.
   - Passes `likelihood` field to each `TripSighting`.
   - Progress bar now counts spottable species only (`.eq("is_spottable", true)`).
+  - Spottable count query now also filters to published species (`.eq("species.published", true)`) to match location page logic.
 
 - **Client component:** `src/app/trips/[id]/TripPageClient.tsx`
   - Sighting cards now show `LikelihoodPill` (common/occasional/rare) when data available.
-  - Date format includes weekday (e.g. "Monday, 14 April 2026").
-  - Progress bar label: "species" → "spottable species".
-  - Removed "What did you see?" CTA button (was redundant).
-  - Share button text: "Share" → "Share with your swim group".
+  - Date format now uses relative labels: "Today", "Yesterday", weekday name for <7 days, then ordinal format ("Monday, 14th April '26").
+  - Progress bar label changed to "{displayName} has found X of Y spottable species".
+  - Removed large species-count numeral circle from hero — cleaner layout.
+  - Headline split: "saw X species" on first line, "at {locationName}" as a separate clickable link with hover arrow.
+  - Removed "Discover {locationName}" CTA button (location link now in headline).
+  - Share button text capitalised: "Share With Your Swim Group".
 
 #### Sighting log — trip report links
 - **Log page:** `src/app/log/page.tsx`
   - Trip cards now include "View trip report" link and "Share" button.
   - Passes `userId` to `TripCard` component to construct trip URLs (`/trips/{userId}-{locationSlug}-{date}`).
   - Share uses `navigator.share()` with clipboard fallback.
+  - Trip card header redesigned: date is now the primary heading (was location name), location shown below with map pin icon as a link.
+  - Date formatting updated: "X days ago" replaced with weekday name for 2-6 days ago, ordinal format for older dates.
 
 #### Region page — spottable species counts
 - **Region page:** `src/app/locations/[region]/page.tsx`
   - Species count and in-season count queries now filter to spottable species only (`.eq("is_spottable", true)`).
   - Consistent with the spottable system introduced in Session 17.
 
-#### Header — profile link update
+#### Header — profile link + username lookup
 - **Header:** `src/components/Header.tsx`
-  - Replaced username/display-name link with "My Profile" link pointing to `/profile` (both desktop and mobile nav).
+  - "My Profile" link now queries `users` table for username and links to `/u/{username}` if available, falls back to `/log`.
   - z-index increased from `z-50` to `z-[100]` to ensure header stays above all content.
+  - Mobile menu `max-h` increased from `max-h-80` to `max-h-[32rem]` and added top padding for better spacing.
+
+#### Spotted tab — search + info tooltip
+- **Spotted tab:** `src/app/locations/[region]/[site]/SpottedTab.tsx`
+  - Added search bar to filter species by common name or scientific name with clear button.
+  - Added info tooltip (?) button next to "X of Y spotted" explaining what "spottable" means (shows count of spottable vs total species).
+  - Accepts new `totalSpeciesAtLocation` prop for the info tooltip context.
+  - "Log sighting" button repositioned to bottom-right of progress section.
+  - Visible count resets when search query changes.
+
+- **Location page:** `src/app/locations/[region]/[site]/LocationPageClient.tsx`
+  - Default tab changed from "species" to "spotted".
+  - Tab labels: "Species" → "All Species".
+  - Tab order: Spotted first, then All Species, About, Map.
+  - Passes `totalSpeciesAtLocation` to `SpottedTab`.
+
+#### Species browse — dark hero
+- **Species browse:** `src/app/species/SpeciesBrowseClient.tsx`
+  - Hero section restyled from light (`bg-sand`) to dark gradient with caustic overlay, matching site-wide hero pattern.
+  - Text and search input colours updated for dark background (white text, translucent input).
+
+#### Auth forms — minor copy tweaks
+- **Login:** `src/app/login/page.tsx` — "Sign In" button label changed to "Log In".
+- **Signup:** `src/app/signup/page.tsx` — "Display name" label changed to "First name", placeholder to "Your first name".
 
 #### Pricing model update — Cabbage Tree Bay always free
 - **Plan doc:** `docs/18-plan-app-website-build.md`
@@ -1006,4 +1035,4 @@
   - Paywall only applies when users access premium features for non-CTB locations.
 
 ### Deviations
-- Header now links to `/profile` which doesn't exist yet as a route (previously linked to `/u/[username]`). Will need a profile page or redirect.
+- None.

@@ -12,12 +12,31 @@ import type { TripData } from "./page";
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00");
-  return date.toLocaleDateString("en-AU", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays > 1 && diffDays < 7) {
+    return date.toLocaleDateString("en-AU", { weekday: "long" });
+  }
+
+  const day = date.getDate();
+  const ordinal =
+    day % 10 === 1 && day !== 11
+      ? "st"
+      : day % 10 === 2 && day !== 12
+        ? "nd"
+        : day % 10 === 3 && day !== 13
+          ? "rd"
+          : "th";
+  const weekday = date.toLocaleDateString("en-AU", { weekday: "long" });
+  const month = date.toLocaleDateString("en-AU", { month: "long" });
+  const year = `'${String(date.getFullYear()).slice(2)}`;
+
+  return `${weekday}, ${day}${ordinal} ${month} ${year}`;
 }
 
 export function TripPageClient({ trip }: { trip: TripData }) {
@@ -99,18 +118,6 @@ export function TripPageClient({ trip }: { trip: TripData }) {
         </div>
 
         <div className="relative z-10 max-w-3xl mx-auto px-6 pt-28 pb-16 md:pt-36 md:pb-20 text-center">
-          {/* Species count — large numeral */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-coral to-teal-500 shadow-lg shadow-coral/20 mb-5"
-          >
-            <span className="font-display text-2xl md:text-3xl font-bold text-white">
-              {speciesCount}
-            </span>
-          </motion.div>
-
           {/* Headline */}
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -119,9 +126,37 @@ export function TripPageClient({ trip }: { trip: TripData }) {
             className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-tight"
           >
             {trip.displayName} saw{" "}
-            <span className="text-coral">{speciesCount} species</span> at{" "}
-            {trip.locationName}
+            <span className="text-coral">{speciesCount} species</span>
           </motion.h1>
+
+          {/* Location link */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
+          >
+            <Link
+              href={locationHref}
+              className="inline-flex items-center gap-1.5 mt-2 text-white/60 hover:text-white transition-colors group/loc"
+            >
+              <span className="font-display text-xl md:text-2xl lg:text-3xl font-medium">
+                at {trip.locationName}
+              </span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                className="opacity-100 md:opacity-0 md:-translate-x-1 md:group-hover/loc:opacity-100 md:group-hover/loc:translate-x-0 transition-all duration-200"
+              >
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </Link>
+          </motion.div>
 
           {/* Date */}
           <motion.p
@@ -143,8 +178,7 @@ export function TripPageClient({ trip }: { trip: TripData }) {
             >
               <div className="flex items-center justify-between text-xs text-white/60 mb-2">
                 <span>
-                  {speciesCount} of {trip.totalSpeciesAtLocation} spottable species at{" "}
-                  {trip.locationName}
+                  {trip.displayName} has found {speciesCount} of {trip.totalSpeciesAtLocation} spottable species
                 </span>
                 <span className="font-medium text-white/80">{progressPct}%</span>
               </div>
@@ -166,17 +200,6 @@ export function TripPageClient({ trip }: { trip: TripData }) {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="flex flex-wrap items-center justify-center gap-3 mt-8"
           >
-            <Link
-              href={locationHref}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-coral hover:bg-coral-dark text-white text-sm font-semibold transition-colors shadow-md shadow-coral/20"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              Discover {trip.locationName}
-            </Link>
-            {/* Desktop share button */}
             <button
               onClick={handleShare}
               className="hidden md:inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/40 text-sm font-medium transition-colors"
@@ -244,7 +267,7 @@ export function TripPageClient({ trip }: { trip: TripData }) {
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
-          Share with your swim group
+          Share With Your Swim Group
         </button>
       </div>
 

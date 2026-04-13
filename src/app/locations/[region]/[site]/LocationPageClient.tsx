@@ -41,8 +41,8 @@ interface LocationPageClientProps {
 }
 
 const TABS = [
-  { id: "species", label: "Species" },
   { id: "spotted", label: "Spotted" },
+  { id: "species", label: "All Species" },
   { id: "about", label: "About" },
   { id: "map", label: "Map" },
 ];
@@ -66,7 +66,7 @@ export function LocationPageClient({
   regionSlug,
 }: LocationPageClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("species");
+  const [activeTab, setActiveTab] = useState("spotted");
   const [spottedIds, setSpottedIds] = useState<Set<string>>(new Set());
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -281,6 +281,7 @@ export function LocationPageClient({
             <SpottedTab
               speciesList={spottableList}
               totalSpecies={spottableCount}
+              totalSpeciesAtLocation={totalSpecies}
               spottedIds={spottedIds}
               isAuthenticated={isAuthenticated}
               authChecked={authChecked}

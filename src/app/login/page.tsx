@@ -65,7 +65,7 @@ function LoginForm() {
             Sign in
           </h1>
           <p className="text-slate-500 mt-2">
-            Welcome back — let&apos;s get you underwater.
+            Welcome back! Have a good swim?
           </p>
         </div>
 

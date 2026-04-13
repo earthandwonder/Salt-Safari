@@ -211,7 +211,7 @@ function SignUpForm() {
                 htmlFor="displayName"
                 className="block text-sm font-medium text-slate-700 mb-1.5"
               >
-                Display name
+                First name
               </label>
               <input
                 id="displayName"
@@ -220,7 +220,7 @@ function SignUpForm() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 required
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
-                placeholder="Your name"
+                placeholder="Your first name"
               />
             </div>
 

@@ -339,20 +339,20 @@ function TripCard({ trip, userId }: { trip: Trip; userId: string | null }) {
       {/* Header row */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
-          <Link
-            href={locationHref}
-            className="font-display text-lg font-semibold text-deep hover:text-teal-700 transition-colors leading-tight"
-          >
-            {trip.locationName}
-          </Link>
+          <h2 className="font-display text-lg font-semibold text-deep leading-tight">
+            {formattedDate}
+          </h2>
           <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
             </svg>
-            {formattedDate}
+            <Link
+              href={locationHref}
+              className="hover:text-teal-700 transition-colors"
+            >
+              {trip.locationName}
+            </Link>
           </p>
         </div>
         <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
@@ -469,11 +469,22 @@ function formatDate(dateStr: string): string {
 
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays > 1 && diffDays < 7) {
+    return date.toLocaleDateString("en-AU", { weekday: "long" });
+  }
 
-  return date.toLocaleDateString("en-AU", {
-    day: "numeric",
-    month: "long",
-    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-  });
+  const day = date.getDate();
+  const ordinal =
+    day % 10 === 1 && day !== 11
+      ? "st"
+      : day % 10 === 2 && day !== 12
+        ? "nd"
+        : day % 10 === 3 && day !== 13
+          ? "rd"
+          : "th";
+  const weekday = date.toLocaleDateString("en-AU", { weekday: "long" });
+  const month = date.toLocaleDateString("en-AU", { month: "long" });
+  const year = `'${String(date.getFullYear()).slice(2)}`;
+
+  return `${weekday}, ${day}${ordinal} ${month} ${year}`;
 }
