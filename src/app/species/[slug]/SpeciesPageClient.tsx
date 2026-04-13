@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Header from "@/components/Header";
 import { TabBar, TabPanel } from "@/components/TabBar";
 import { Footer } from "@/components/Footer";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
@@ -67,6 +68,8 @@ export function SpeciesPageClient({
 
   return (
     <div className="min-h-screen bg-sand">
+      <Header />
+
       {/* ══════════════════════════════════════════
           HERO
          ══════════════════════════════════════════ */}

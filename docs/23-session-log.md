@@ -441,3 +441,60 @@
 
 ### Build
 - `npm run build` passes clean. Species page is 47.8 kB first load JS (includes Motion for PhotoLightbox).
+
+---
+
+## Session 10 — Regions Index + Region Page
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **Regions index:** `src/app/locations/page.tsx`
+  - Server Component. Fetches all published regions with location counts.
+  - Hero section with animated gradient background, wave divider transition to content.
+  - Grid of region cards (16:9 hero image, name overlaid, location count badge, short description).
+  - Sorted alphabetically. Empty state for when no regions are published.
+  - SEO metadata targeting "snorkelling spots in Australia" keywords.
+
+- **Region page (server):** `src/app/locations/[region]/page.tsx`
+  - Server Component. Fetches region by slug. 404 if not found or not published.
+  - Fetches all published locations in the region with species counts and in-season counts.
+  - In-season count computed per location: queries all seasonality data, counts species active ≤8 months AND active in current month.
+  - Fetches top 24 species across all locations by total observation count.
+  - Aggregates seasonality across locations for top species (takes best likelihood per month).
+  - `generateMetadata()` — dynamic title, description, OG tags.
+  - JSON-LD `TouristDestination` schema.org structured data.
+
+- **Region page (client):** `src/app/locations/[region]/RegionPageClient.tsx`
+  - Hero section: full-width image (or gradient fallback), region name (Fraunces), breadcrumb nav, quick facts (location count, in-season indicator), description.
+  - Tabs via `TabBar`: Locations (default), Species, Map.
+  - Sticky tab bar below header on scroll.
+  - CTA banner: "Saw something you can't identify?" → `/id`.
+  - Footer included.
+
+- **Locations tab:** `src/app/locations/[region]/LocationsTab.tsx`
+  - Client Component. All filtering is client-side (data pre-loaded from server).
+  - Filters: activity type dropdown, skill level dropdown, sort by (most species / most in season / alphabetical).
+  - `ResponsiveGrid` of `LocationCard` components (1-col mobile, 2-col tablet, 3-col desktop).
+  - Results count label. Clear filters button. Empty state with reset.
+
+- **Species tab:** `src/app/locations/[region]/RegionSpeciesTab.tsx`
+  - Client Component. "What you might see in [Region]" header.
+  - Grid of top species via `SpeciesCard` (2-col mobile, 3-col tablet, 4-col desktop).
+  - Uses aggregated seasonality for likelihood pills and in-season badges.
+
+- **Map tab:** `src/app/locations/[region]/RegionMapTab.tsx`
+  - Client Component. Mapbox with all location pins in the region.
+  - Click pin → popup with location name, species count, in-season count, link to location page.
+  - Auto-calculates center and zoom from location spread.
+  - Location list below map with pin icons and quick stats.
+  - Graceful fallback if Mapbox token not configured.
+
+### Bug fix (cross-session)
+- **Missing Header on dark-hero pages:** Location page (`LocationPageClient`), species page (`SpeciesPageClient`), and region page (`RegionPageClient`) were not rendering the `<Header />` component. The Header is `fixed top-0` and overlays the hero, and the heroes had `pt-28` to leave space — but without actually rendering Header, those pages had no navigation. Added `<Header />` to all three client wrappers. The Header's white text + transparent-to-dark-navy style works correctly over the dark hero backgrounds.
+
+### Deviations
+- None. All 5 steps from the implementation prompt completed as specified.
+
+### Build
+- `npm run build` passes clean. Regions index is 1.8 kB first load JS. Region page is 5.04 kB first load JS (includes Header).

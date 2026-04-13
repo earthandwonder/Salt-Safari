@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Header from "@/components/Header";
 import { TabBar, TabPanel } from "@/components/TabBar";
 import { Footer } from "@/components/Footer";
 import type { Location, Region } from "@/types";
@@ -93,6 +94,8 @@ export function LocationPageClient({
 
   return (
     <div className="min-h-screen bg-sand">
+      <Header />
+
       {/* ══════════════════════════════════════════
           HERO
          ══════════════════════════════════════════ */}
