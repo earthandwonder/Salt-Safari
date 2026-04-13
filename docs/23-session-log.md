@@ -806,3 +806,146 @@
 
 ### Build
 - `npm run build` passes clean. `/species` browse page is 5.41 kB, `/credits` is 1.96 kB.
+
+---
+
+## Session 17 — Spottable Species, Spotted Tab, Species ID Scoring, Homepage Redesign
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+
+#### Spottable species system
+- **Database migration:** `supabase/migrations/20260413000000_add_is_spottable.sql`
+  - Added `is_spottable BOOLEAN DEFAULT false` column to `location_species` table with index.
+
+- **Spottable classification script:** `scripts/set-spottable.ts`
+  - CLI tool: `npx tsx scripts/set-spottable.ts --location <slug> [--dry-run] [--max 200]`
+  - Taxonomic filtering: excludes algae, sponges, worms, bryozoans, birds, and most molluscs (only cephalopods + nudibranchs pass).
+  - Charismatic taxa (sharks, rays, turtles, seahorses, cephalopods, whales, seals) guaranteed spottable with ≥30 observations.
+  - Regular species spottable with ≥3 observations, up to a per-site cap (default 200).
+  - Fetches all location_species with species taxonomy from Supabase, applies filters, updates `is_spottable` in batch.
+
+- **Orchestrator integration:** `src/lib/pipeline/orchestrator.ts`
+  - Added `markSpottableSpecies()` function with identical taxonomic logic to the standalone script.
+  - Automatically called at the end of pipeline runs to set `is_spottable` on freshly ingested data.
+
+#### Spotted Tab (new)
+- **New component:** `src/app/locations/[region]/[site]/SpottedTab.tsx`
+  - Client Component. Separate tab on location pages showing species as a checklist/collection.
+  - Progress bar: "X of Y spotted" with gradient fill for authenticated users. CTA to sign up for unauthenticated users.
+  - Species sorted: spotted species first, then by observation count.
+  - Quick-log "+" button on unspotted species cards.
+  - Grid layout via `ResponsiveGrid` (2-col mobile, 3-col tablet, 4-col desktop).
+
+- **Location page updated:** `src/app/locations/[region]/[site]/page.tsx`
+  - Added "Spotted" tab alongside Species, About, Map.
+  - Passes `spottableCount` and spotted data to the new tab.
+  - Updated TypeScript types: added `is_spottable` to database types.
+
+#### Species ID scoring improvements
+- **Weighted scoring:** `src/app/api/species/identify/route.ts`
+  - Replaced simple match-count scoring with weighted criteria: colour (weight 4), size (weight 3), habitat (1.5), seasonality (1.5).
+  - Colour matching is now proportional — matching 2/3 selected colours scores higher than 1/3.
+  - Reduced confidence boost from 0.1 to 0.03 max, so observation count can't flip rankings over actual trait matches.
+  - Added debug logging for top 10 results (scoring breakdown).
+
+#### Homepage redesign — Cabbage Tree Bay focus
+- **Server component:** `src/app/page.tsx`
+  - Changed from generic multi-location homepage to Cabbage Tree Bay-focused landing page.
+  - Replaced hero copy: "Discover what lives beneath the surface" → "{speciesCount}+ species call this place home."
+  - Stats now show species count + in-season count (removed location/region counts).
+  - Added user authentication check — fetches logged-in user's sighting data at CTB.
+  - Personalised collection preview: spotted species shown first with "revealed" state, unspotted silhouetted.
+  - Personalised trip report card: shows user's latest log data (species count, location, date, species images).
+  - Progress bar shows real spotted/spottable ratio for logged-in users.
+  - Changed from `revalidate = 3600` (ISR) to `dynamic = "force-dynamic"` (needs auth check per request).
+
+- **Client component:** `src/app/HomePageClient.tsx`
+  - Dual CTAs: "Explore the species" (coral button → location page) + "What did I just see?" (outline button → ID tool).
+  - In Season section header: "Visiting this month? Look for these."
+  - Collection section: real progress bar based on user data. "Log a sighting" link (logged-in) vs "Sign up" (logged-out).
+  - Trip report card: shows user's real latest trip data when logged in, mock data when logged out.
+  - CTA copy updates: "Create your free account" → "Log a sighting" when logged in.
+  - New props: `userSpottedCount`, `userLatestLog`, `isLoggedIn`.
+
+- **Hero image upload script:** `scripts/upload-location-hero.ts`
+  - One-off script to download Cabbage Tree Bay panoramic image from Wikimedia Commons, upload to R2, and set as location hero image.
+  - Creates photo record with full attribution (photographer, license, source URL).
+
+### Deviations
+- Homepage is now single-location focused (Cabbage Tree Bay) rather than multi-location. This is intentional — launching with one location first.
+- Homepage changed from ISR to dynamic rendering to support per-user personalisation.
+
+---
+
+## Session 18 — Design Polish, Auth Flow, and UX Fixes
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+
+#### Auth flow improvements
+- **Login redirect preservation:** `src/app/login/page.tsx`
+  - Added `redirectTo` query param support. After login, redirects to the page the user was on (instead of always going to `/`).
+  - Google OAuth passes `redirectTo` through to the auth callback.
+  - "Sign up" link preserves `redirectTo` when switching between login/signup.
+  - Wrapped in `Suspense` boundary for `useSearchParams`.
+
+- **Signup redirect preservation:** `src/app/signup/page.tsx`
+  - Same `redirectTo` param support as login page.
+  - Google OAuth passes redirect through.
+  - "Sign in" link preserves `redirectTo`.
+  - Wrapped in `Suspense` boundary.
+
+- **Header auth-aware links:** `src/components/Header.tsx`
+  - Sign in / Sign up links now include `redirectTo` with the current pathname (via `usePathname`).
+  - "My Log" link moved outside the auth conditional — always visible (both desktop and mobile nav), not just for logged-in users.
+
+- **Location page login redirect:** `src/app/locations/[region]/[site]/LocationPageClient.tsx`
+  - "Log Sighting" FAB now always visible (was hidden for unauthenticated users).
+  - Clicking when not authenticated redirects to login with `redirectTo` set to current location page.
+  - `handleOpenSightingModal` checks `isAuthenticated` before opening modal.
+
+- **Protected page redirects:**
+  - `src/app/log/page.tsx` — redirect to `/login?redirectTo=%2Flog` (was just `/login`).
+  - `src/app/alerts/page.tsx` — redirect to `/login?redirectTo=%2Falerts` (was just `/login`).
+
+#### Infinite scroll on species lists
+- **SpeciesTab:** `src/app/locations/[region]/[site]/SpeciesTab.tsx`
+  - Added IntersectionObserver-based infinite scroll. Initial batch of 24 species, loads 24 more when sentinel enters viewport (400px root margin).
+  - Resets visible count when filters change.
+
+- **SpottedTab:** `src/app/locations/[region]/[site]/SpottedTab.tsx`
+  - Same infinite scroll pattern as SpeciesTab (batch size 24, IntersectionObserver).
+  - Added "View all your sightings" link below progress bar (links to `/log`).
+  - Quick-log "+" button now always visible (was hover-only), redirects to login if not authenticated.
+
+#### Sighting log page redesign
+- **Trip card layout:** `src/app/log/page.tsx`
+  - Replaced small thumbnail grid with full species list layout.
+  - Each sighting: 128px square image, common name, scientific name, quantity badge, notes.
+  - Removed overflow count indicator and "notes preview" section (notes now inline per species).
+
+#### LogSightingModal improvements
+- **Auto-close:** `src/components/LogSightingModal.tsx` — modal auto-closes 1.2s after successful sighting log.
+- **Mobile input sizing:** Search, date, and notes inputs use `text-base sm:text-sm` to prevent iOS zoom on focus.
+
+#### Location page mobile fixes
+- **Breadcrumb overflow:** `src/app/locations/[region]/[site]/LocationPageClient.tsx`
+  - Added `overflow-hidden`, `shrink-0` on breadcrumb segments, `truncate` on location name to prevent horizontal scroll.
+  - Added `overflow-x-hidden` on page container.
+
+#### Homepage personalisation polish
+- **HomePageClient:** `src/app/HomePageClient.tsx`
+  - Alert teaser copy split into heading + subtext for better readability.
+  - Collection progress bar now shows real data for logged-in users.
+  - Trip report card and CTA section: mobile-first ordering with `order-1`/`order-2` classes (text above card on mobile, beside on desktop).
+  - Species ID promo section: same mobile-first ordering fix (text above phone mockup on mobile).
+
+#### Data cleanup
+- **Migration:** `supabase/migrations/20260413100000_delete_bull_shark.sql`
+  - Removes Bull Shark species and associated photos from the database (incorrect data for Cabbage Tree Bay).
+
+### Deviations
+- None.
