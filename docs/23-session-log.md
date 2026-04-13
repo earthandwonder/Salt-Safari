@@ -498,3 +498,40 @@
 
 ### Build
 - `npm run build` passes clean. Regions index is 1.8 kB first load JS. Region page is 5.04 kB first load JS (includes Header).
+
+---
+
+## Session 11 — Species ID Tool — Wire to Real Data
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **API route:** `src/app/api/species/identify/route.ts`
+  - `GET /api/species/identify` — server-side filtering endpoint.
+  - Query params: `location` (slug), `month` (0-11), `size`, `colours` (comma-separated), `habitat`.
+  - Location filter: fetches species at that location via `location_species` join. Supports `__all__` sentinel for no-location search.
+  - Month filter: queries `species_seasonality` for species active that month with `common` or `occasional` likelihood.
+  - Size filter: matches `species.size_category`.
+  - Colour filter: checks array overlap with `species.colours`.
+  - Habitat filter: checks array inclusion in `species.habitat`.
+  - Scoring: match ratio (criteria matched / total criteria) + confidence boost. Labels: Confirmed (all criteria matched, 3+), Likely (>=60%), Possible (any match).
+  - Missing enrichment data treated as "no match" (not "exclude") per spec.
+  - Returns top 50 results sorted by match score. Handles Supabase pagination and `.in()` batch limits.
+
+- **Updated Species ID wizard:** `src/app/id/page.tsx`
+  - Replaced hardcoded `LOCATIONS` with Supabase query. Locations grouped by region with section headers.
+  - Added "I'm not sure / Search all species" option for location-agnostic search.
+  - Pre-fill behaviour: `?location=slug` URL param pre-fills Step 1 and auto-advances to Step 2 (month). Current month pre-selected.
+  - Results section: shows real `SpeciesCard`-style rows with hero photos, common name, scientific name, match label (Confirmed/Likely/Possible colour-coded).
+  - Loading states: skeleton placeholders for locations fetch and results fetch.
+  - Empty state: "No matches found" with "Go back and adjust" link.
+  - Dynamic results header: "We found N matches" with "Showing top 50" note when truncated.
+  - Wrapped in `Suspense` boundary for `useSearchParams`.
+  - Added `Footer` component.
+  - Static data preserved: months, sizes, colours, habitats remain as constants (no query needed per spec).
+
+### Deviations
+- None. All 6 steps from the implementation prompt completed as specified.
+
+### Build
+- `npm run build` passes clean. `/id` page is 4.29 kB first load JS. API route is 123 B.

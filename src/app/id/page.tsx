@@ -1,22 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { createClient } from "@/lib/supabase/client";
 
 /* ============================================================
-   PLACEHOLDER DATA — replace with Supabase queries
+   STATIC DATA — months, sizes, colours, habitats
    ============================================================ */
-
-const LOCATIONS = [
-  { id: "bare-island", name: "Bare Island", region: "Sydney" },
-  { id: "shelly-beach", name: "Shelly Beach", region: "Sydney" },
-  { id: "cabbage-tree-bay", name: "Cabbage Tree Bay Aquatic Reserve", region: "Sydney" },
-  { id: "clovelly-beach", name: "Clovelly Beach", region: "Sydney" },
-  { id: "magic-point", name: "Magic Point", region: "Sydney" },
-  { id: "gordons-bay", name: "Gordon's Bay", region: "Sydney" },
-  { id: "toowoon-bay", name: "Toowoon Bay Beach", region: "Central Coast" },
-];
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -24,36 +17,11 @@ const MONTHS = [
 ];
 
 const SIZES = [
-  {
-    id: "tiny",
-    label: "Tiny",
-    desc: "Shrimp, nudibranch",
-    scale: 0.5,
-  },
-  {
-    id: "small",
-    label: "Small",
-    desc: "Hand-sized — blenny, seahorse",
-    scale: 0.7,
-  },
-  {
-    id: "medium",
-    label: "Medium",
-    desc: "Forearm — leatherjacket, cuttlefish",
-    scale: 0.85,
-  },
-  {
-    id: "large",
-    label: "Large",
-    desc: "Arm length — groper, octopus",
-    scale: 1.0,
-  },
-  {
-    id: "very_large",
-    label: "Very large",
-    desc: "Body+ — shark, dolphin, turtle",
-    scale: 1.2,
-  },
+  { id: "tiny", label: "Tiny", desc: "Shrimp, nudibranch", scale: 0.5 },
+  { id: "small", label: "Small", desc: "Hand-sized — blenny, seahorse", scale: 0.7 },
+  { id: "medium", label: "Medium", desc: "Forearm — leatherjacket, cuttlefish", scale: 0.85 },
+  { id: "large", label: "Large", desc: "Arm length — groper, octopus", scale: 1.0 },
+  { id: "very_large", label: "Very large", desc: "Body+ — shark, dolphin, turtle", scale: 1.2 },
 ];
 
 const COLOURS = [
@@ -82,70 +50,55 @@ const HABITATS = [
   { id: "kelp", label: "In kelp", icon: "🌱" },
 ];
 
-const MOCK_RESULTS = [
-  {
-    name: "Blue Groper",
-    confidence: "Very likely",
-    gradient: "from-blue-700 to-indigo-800",
-  },
-  {
-    name: "Cuttlefish",
-    confidence: "Likely",
-    gradient: "from-amber-800 to-orange-900",
-  },
-  {
-    name: "Wobbegong",
-    confidence: "Possible",
-    gradient: "from-yellow-800 to-stone-700",
-  },
-  {
-    name: "Blue-ringed Octopus",
-    confidence: "Possible",
-    gradient: "from-sky-700 to-blue-900",
-  },
-];
-
 /* ============================================================
-   STEPS
+   TYPES
    ============================================================ */
+
+type LocationOption = {
+  slug: string;
+  name: string;
+  regionName: string;
+};
+
+type SpeciesResult = {
+  id: string;
+  slug: string;
+  name: string;
+  scientific_name: string | null;
+  hero_image_url: string | null;
+  matchScore: number;
+  matchLabel: "Confirmed" | "Likely" | "Possible";
+};
 
 type StepId = "location" | "month" | "size" | "colours" | "habitat";
 
 const STEPS: { id: StepId; title: string; subtitle: string }[] = [
-  {
-    id: "location",
-    title: "Where did you see it?",
-    subtitle: "Pick the location or region",
-  },
-  {
-    id: "month",
-    title: "When?",
-    subtitle: "Which month did you see it?",
-  },
-  {
-    id: "size",
-    title: "How big was it?",
-    subtitle: "Rough body size, not including tail",
-  },
-  {
-    id: "colours",
-    title: "What colours did you see?",
-    subtitle: "Select up to 3 main colours",
-  },
-  {
-    id: "habitat",
-    title: "Where was it?",
-    subtitle: "What kind of environment?",
-  },
+  { id: "location", title: "Where did you see it?", subtitle: "Pick the location or region" },
+  { id: "month", title: "When?", subtitle: "Which month did you see it?" },
+  { id: "size", title: "How big was it?", subtitle: "Rough body size, not including tail" },
+  { id: "colours", title: "What colours did you see?", subtitle: "Select up to 3 main colours" },
+  { id: "habitat", title: "Where was it?", subtitle: "What kind of environment?" },
 ];
 
 /* ============================================================
-   WIZARD
+   INNER COMPONENT (uses useSearchParams)
    ============================================================ */
 
-export default function SpeciesIdPage() {
+function SpeciesIdWizard() {
+  const searchParams = useSearchParams();
+  const prefilledLocation = searchParams.get("location");
+
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+
+  // Determine initial step: if location is pre-filled, skip to step 1 (month)
   const [currentStep, setCurrentStep] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState<SpeciesResult[]>([]);
+  const [totalResults, setTotalResults] = useState(0);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [prefillApplied, setPrefillApplied] = useState(false);
+
   const [answers, setAnswers] = useState<{
     location: string | null;
     month: number | null;
@@ -153,15 +106,75 @@ export default function SpeciesIdPage() {
     colours: string[];
     habitat: string | null;
   }>({
-    location: null,
-    month: new Date().getMonth(), // Pre-select current month
+    location: prefilledLocation || null,
+    month: new Date().getMonth(),
     size: null,
     colours: [],
     habitat: null,
   });
 
+  // Fetch locations from Supabase
+  useEffect(() => {
+    async function fetchLocations() {
+      const supabase = createClient();
+      const { data: locs } = await supabase
+        .from("locations")
+        .select("slug, name, region_id")
+        .eq("published", true)
+        .order("name");
+
+      if (!locs || locs.length === 0) {
+        setLocationsLoading(false);
+        return;
+      }
+
+      // Fetch region names
+      const regionIds = [...new Set(locs.map((l) => l.region_id))];
+      const { data: regions } = await supabase
+        .from("regions")
+        .select("id, name")
+        .in("id", regionIds);
+
+      const regionMap = new Map(regions?.map((r) => [r.id, r.name]) ?? []);
+
+      setLocations(
+        locs.map((l) => ({
+          slug: l.slug,
+          name: l.name,
+          regionName: regionMap.get(l.region_id) ?? "",
+        }))
+      );
+      setLocationsLoading(false);
+    }
+    fetchLocations();
+  }, []);
+
+  // Apply pre-fill: skip location step if location param is valid
+  useEffect(() => {
+    if (
+      !prefillApplied &&
+      !locationsLoading &&
+      prefilledLocation &&
+      locations.some((l) => l.slug === prefilledLocation)
+    ) {
+      setAnswers((prev) => ({ ...prev, location: prefilledLocation }));
+      setCurrentStep(1); // Skip to month step
+      setPrefillApplied(true);
+    }
+  }, [prefillApplied, locationsLoading, prefilledLocation, locations]);
+
+  // Group locations by region
+  const locationsByRegion = locations.reduce<Record<string, LocationOption[]>>(
+    (acc, loc) => {
+      const region = loc.regionName || "Other";
+      if (!acc[region]) acc[region] = [];
+      acc[region].push(loc);
+      return acc;
+    },
+    {}
+  );
+
   const step = STEPS[currentStep];
-  const progress = ((currentStep + 1) / STEPS.length) * 100;
 
   const canAdvance = () => {
     switch (step.id) {
@@ -178,11 +191,33 @@ export default function SpeciesIdPage() {
     }
   };
 
+  const fetchResults = useCallback(async () => {
+    setResultsLoading(true);
+    const params = new URLSearchParams();
+    if (answers.location) params.set("location", answers.location);
+    if (answers.month !== null) params.set("month", answers.month.toString());
+    if (answers.size) params.set("size", answers.size);
+    if (answers.colours.length > 0) params.set("colours", answers.colours.join(","));
+    if (answers.habitat) params.set("habitat", answers.habitat);
+
+    try {
+      const res = await fetch(`/api/species/identify?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setResults(data.results);
+        setTotalResults(data.total);
+      }
+    } finally {
+      setResultsLoading(false);
+    }
+  }, [answers]);
+
   const handleNext = () => {
     if (currentStep < STEPS.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       setShowResults(true);
+      fetchResults();
     }
   };
 
@@ -197,6 +232,8 @@ export default function SpeciesIdPage() {
   const handleReset = () => {
     setCurrentStep(0);
     setShowResults(false);
+    setResults([]);
+    setTotalResults(0);
     setAnswers({
       location: null,
       month: new Date().getMonth(),
@@ -217,11 +254,19 @@ export default function SpeciesIdPage() {
     }));
   };
 
-  /* ──────────────────────────────────────────
-     RENDER
-     ────────────────────────────────────────── */
+  const matchLabelColor = (label: string) => {
+    switch (label) {
+      case "Confirmed":
+        return "text-emerald-600";
+      case "Likely":
+        return "text-teal-600";
+      default:
+        return "text-slate-400";
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50 flex flex-col">
       <Header />
 
       {/* Dark top bar with progress */}
@@ -259,34 +304,89 @@ export default function SpeciesIdPage() {
                 Results
               </p>
               <h1 className="font-display text-2xl md:text-3xl font-semibold text-white">
-                We found some matches
+                {resultsLoading
+                  ? "Searching..."
+                  : results.length > 0
+                    ? `We found ${totalResults} match${totalResults === 1 ? "" : "es"}`
+                    : "No matches found"}
               </h1>
+              {!resultsLoading && totalResults > 50 && (
+                <p className="text-white/50 text-sm mt-1">
+                  Showing top 50 results
+                </p>
+              )}
             </>
           )}
         </div>
       </div>
 
       {/* Step content */}
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-2xl mx-auto px-6 py-8 flex-1">
         {!showResults ? (
           <div className="animate-fade-up">
             {/* STEP: Location */}
             {step.id === "location" && (
-              <div className="space-y-2">
-                {LOCATIONS.map((loc) => (
+              <div className="space-y-4">
+                {locationsLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="h-16 rounded-xl bg-slate-100 animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : locations.length === 0 ? (
+                  <p className="text-slate-400 text-center py-8">
+                    No locations available yet.
+                  </p>
+                ) : (
+                  Object.entries(locationsByRegion)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([region, locs]) => (
+                      <div key={region}>
+                        <p className="text-xs text-slate-400 font-medium tracking-wider uppercase mb-2">
+                          {region}
+                        </p>
+                        <div className="space-y-2">
+                          {locs.map((loc) => (
+                            <button
+                              key={loc.slug}
+                              onClick={() =>
+                                setAnswers({ ...answers, location: loc.slug })
+                              }
+                              className={`step-option w-full text-left ${
+                                answers.location === loc.slug ? "selected" : ""
+                              }`}
+                            >
+                              <p className="font-medium text-slate-800">
+                                {loc.name}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                )}
+
+                {/* "Search all species" option */}
+                <div className="pt-2 border-t border-slate-100">
                   <button
-                    key={loc.id}
                     onClick={() =>
-                      setAnswers({ ...answers, location: loc.id })
+                      setAnswers({ ...answers, location: "__all__" })
                     }
                     className={`step-option w-full text-left ${
-                      answers.location === loc.id ? "selected" : ""
+                      answers.location === "__all__" ? "selected" : ""
                     }`}
                   >
-                    <p className="font-medium text-slate-800">{loc.name}</p>
-                    <p className="text-sm text-slate-400">{loc.region}</p>
+                    <p className="font-medium text-slate-800">
+                      I&apos;m not sure / Search all species
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Search across all locations
+                    </p>
                   </button>
-                ))}
+                </div>
               </div>
             )}
 
@@ -324,7 +424,6 @@ export default function SpeciesIdPage() {
                       <p className="font-medium text-slate-800">{size.label}</p>
                       <p className="text-sm text-slate-400">{size.desc}</p>
                     </div>
-                    {/* Scaled fish silhouette */}
                     <svg
                       viewBox="0 0 24 24"
                       fill="currentColor"
@@ -414,7 +513,7 @@ export default function SpeciesIdPage() {
                   currentStep === 0 ? "invisible" : ""
                 }`}
               >
-                ← Back
+                &larr; Back
               </button>
               <button
                 onClick={handleNext}
@@ -446,68 +545,100 @@ export default function SpeciesIdPage() {
              RESULTS
              ────────────────────────────────────── */
           <div className="animate-fade-up">
-            <div className="space-y-4 mb-10">
-              {MOCK_RESULTS.map((result, i) => (
-                <Link
-                  key={result.name}
-                  href={`/species/${result.name.toLowerCase().replace(/\s+/g, "-")}`}
-                  className="card-lift block bg-white rounded-2xl overflow-hidden shadow-sm"
+            {resultsLoading ? (
+              <div className="space-y-4 mb-10">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="h-24 rounded-2xl bg-slate-100 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : results.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-slate-500 mb-4">
+                  No species matched your criteria. Try adjusting your answers.
+                </p>
+                <button
+                  onClick={handleBack}
+                  className="text-teal-600 hover:text-teal-700 font-medium text-sm transition-colors"
                 >
-                  <div className="flex items-center gap-4 p-4">
-                    {/* Species photo placeholder */}
-                    <div
-                      className={`w-20 h-20 rounded-xl bg-gradient-to-br ${result.gradient} flex-shrink-0`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-display text-lg font-semibold text-deep">
-                        {result.name}
-                      </h3>
-                      <p
-                        className={`text-sm font-medium mt-0.5 ${
-                          i === 0
-                            ? "text-emerald-600"
-                            : i === 1
-                              ? "text-teal-600"
-                              : "text-slate-400"
-                        }`}
-                      >
-                        {result.confidence}
-                      </p>
-                    </div>
-                    <svg
-                      className="w-5 h-5 text-slate-300 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  &larr; Go back and adjust
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4 mb-10">
+                  {results.map((result) => (
+                    <Link
+                      key={result.id}
+                      href={`/species/${result.slug}`}
+                      className="card-lift block bg-white rounded-2xl overflow-hidden shadow-sm"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                      <div className="flex items-center gap-4 p-4">
+                        {/* Species photo */}
+                        {result.hero_image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={result.hero_image_url}
+                            alt={result.name}
+                            className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-20 h-20 rounded-xl photo-placeholder-species flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display text-lg font-semibold text-deep truncate">
+                            {result.name}
+                          </h3>
+                          {result.scientific_name && (
+                            <p className="text-xs text-slate-400 italic truncate">
+                              {result.scientific_name}
+                            </p>
+                          )}
+                          <p
+                            className={`text-sm font-medium mt-0.5 ${matchLabelColor(result.matchLabel)}`}
+                          >
+                            {result.matchLabel}
+                          </p>
+                        </div>
+                        <svg
+                          className="w-5 h-5 text-slate-300 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
 
-            {/* Premium upsell */}
-            <div className="bg-deep/5 rounded-2xl p-5 text-center mb-8">
-              <p className="font-display text-lg font-semibold text-deep mb-1">
-                Want the full story?
-              </p>
-              <p className="text-sm text-slate-500 mb-4">
-                Unlock deep dives into every species — behaviour, fun facts, and
-                identification tips.
-              </p>
-              <Link
-                href="/premium"
-                className="inline-block bg-coral hover:bg-coral-dark text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors"
-              >
-                Start Free Trial
-              </Link>
-            </div>
+                {/* Premium upsell */}
+                <div className="bg-deep/5 rounded-2xl p-5 text-center mb-8">
+                  <p className="font-display text-lg font-semibold text-deep mb-1">
+                    Want the full story?
+                  </p>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Unlock deep dives into every species — behaviour, fun facts, and
+                    identification tips.
+                  </p>
+                  <Link
+                    href="/premium"
+                    className="inline-block bg-coral hover:bg-coral-dark text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors"
+                  >
+                    Start Free Trial
+                  </Link>
+                </div>
+              </>
+            )}
 
             {/* Actions */}
             <div className="flex items-center justify-center gap-4">
@@ -528,6 +659,31 @@ export default function SpeciesIdPage() {
           </div>
         )}
       </div>
+
+      <Footer />
     </main>
+  );
+}
+
+/* ============================================================
+   PAGE EXPORT (Suspense boundary for useSearchParams)
+   ============================================================ */
+
+export default function SpeciesIdPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-50">
+          <Header />
+          <div className="bg-deep pt-20 pb-8 px-6">
+            <div className="max-w-2xl mx-auto">
+              <div className="h-8 w-48 bg-white/10 rounded animate-pulse" />
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <SpeciesIdWizard />
+    </Suspense>
   );
 }
