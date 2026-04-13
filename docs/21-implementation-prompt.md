@@ -15,11 +15,11 @@
 
 Before any code is written, the user needs to do the following manually:
 
-1. **Create a Supabase project** at [supabase.com](https://supabase.com). Note the project URL, anon key, and service role key.
+1. **Create a Supabase project** at [supabase.com](https://supabase.com). Note the project URL, publishable key, and secret key.
 2. **Create a Mapbox account** at [mapbox.com](https://mapbox.com). Get a public access token (free tier: 50K map loads/month).
 3. **Register for Resend** at [resend.com](https://resend.com). Get an API key (free tier: 3K emails/month).
 4. Optional: **Flickr Pro account** + apply for a commercial API key (~A$10/month). Can be deferred to Session 5 if budget is a concern — the photo pipeline works without Flickr, just fewer photos.
-5. Optional: **Register an iNaturalist application** at [inaturalist.org/oauth/applications](https://www.inaturalist.org/oauth/applications). Not required (no auth benefit), but gives you an app ID for tracking.
+5. Optional: **Register an iNaturalist application** at [inaturalist.org/oauth/applications](https://www.inaturalist.org/oauth/applications). Not required (no auth benefit), but gives you an app ID for tracking. Update: Making an app has activity requirements I don't meet yet. Too much effort to make if its not necessary.
 
 **Put all keys in `.env.local`** (never commit this file). The `.env.example` file should be updated with placeholder variable names as you go.
 
@@ -38,7 +38,7 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
 **Steps:**
 
 1. **Environment setup**
-   - Create `.env.local` with all Supabase keys (URL, anon key, service role key), Mapbox token, Resend API key. User provides these values.
+   - Create `.env.local` with all Supabase keys (URL, publishable key, secret key), Mapbox token, Resend API key. User provides these values.
    - Update `.env.example` with placeholder variable names (no real values).
 
 2. **Run database migration**
@@ -85,7 +85,7 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
 
 **Guidance:**
 - The `@supabase/ssr` package is already in `package.json`. Use it, not the deprecated `@supabase/auth-helpers-nextjs`.
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser. Only use it in Server Components, Route Handlers, and scripts.
+- Never expose `SUPABASE_SECRET_KEY` to the browser. Only use it in Server Components, Route Handlers, and scripts.
 - The middleware must refresh the session on every request — without this, server components won't have a valid session.
 
 ---
@@ -236,7 +236,7 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
    - Check database: species table should have 100+ entries, location_species should have records with confidence scores, source_records should show provenance, seasonality should have monthly data.
 
 **Guidance:**
-- Use the Supabase **service role key** for all pipeline database writes (bypasses RLS).
+- Use the Supabase **secret key** for all pipeline database writes (bypasses RLS).
 - The orchestrator is the most complex piece. Take it step by step. Log generously.
 - Seasonality calls are the most API-intensive part (one `/histogram` call per species). For 200 species, that's 200 calls at 60/min = ~3.5 minutes. This is fine.
 - Species slugs: generate from common name if available, otherwise scientific name. Lowercase, hyphenated. e.g., "Weedy Seadragon" → "weedy-seadragon".
@@ -895,7 +895,7 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
 
 **Guidance:**
 - Vercel free tier (Hobby) is sufficient for launch.
-- Make sure `SUPABASE_SERVICE_ROLE_KEY` is set as a non-public env var (no `NEXT_PUBLIC_` prefix).
+- Make sure `SUPABASE_SECRET_KEY` is set as a non-public env var (no `NEXT_PUBLIC_` prefix).
 - The cron job on Vercel free tier may have limitations — check Vercel docs. If crons aren't available on free tier, fall back to manual monthly script execution.
 - Don't forget to set `CRON_SECRET` in Vercel env vars.
 
@@ -1313,7 +1313,7 @@ These are listed for awareness. Plan them when Phase 3 is complete.
 - Server Components by default. Only use `"use client"` when needed (interactivity, hooks, browser APIs).
 - Supabase queries in Server Components use the server client (`src/lib/supabase/server.ts`).
 - Supabase queries in Client Components use the browser client (`src/lib/supabase/client.ts`).
-- API routes for server-only operations (pipeline, webhooks, things needing service role key).
+- API routes for server-only operations (pipeline, webhooks, things needing secret key).
 - File structure follows `docs/18-plan-app-website-build.md` section "File & folder conventions".
 
 ### Data

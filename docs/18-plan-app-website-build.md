@@ -1325,8 +1325,8 @@ Note: Most read operations use Supabase client directly (no API route needed). A
 ```
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=       — Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=  — Supabase anon/public key
-SUPABASE_SERVICE_ROLE_KEY=      — Service role key (server-side only, never expose)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=  — Supabase publishable key
+SUPABASE_SECRET_KEY=                   — Secret key (server-side only, never expose)
 
 # Mapbox
 NEXT_PUBLIC_MAPBOX_TOKEN=       — Mapbox public access token

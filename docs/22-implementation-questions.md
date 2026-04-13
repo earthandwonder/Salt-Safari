@@ -12,8 +12,8 @@
 **Session:** 1
 **Question:** Once you've created your Supabase project, paste the following values here (or put them directly in `.env.local`):
 - `NEXT_PUBLIC_SUPABASE_URL` =
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` =
-- `SUPABASE_SERVICE_ROLE_KEY` =
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` =
+- `SUPABASE_SECRET_KEY` =
 
 **Answer:**
 
