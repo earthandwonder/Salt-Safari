@@ -387,3 +387,57 @@
 
 ### Build
 - `npm run build` passes clean. Location page is 14 kB first load JS.
+
+---
+
+## Session 9 — Species Page
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **Route:** `src/app/species/[slug]/page.tsx`
+  - Server Component. Fetches species by slug from Supabase. 404 if not found or not published.
+  - Fetches all photos for the species (hero first).
+  - Fetches all locations where this species appears via `location_species` join, with region data.
+  - Fetches seasonality data per location (batched 200 IDs per `.in()` query).
+  - Fetches similar species (same family, limit 4).
+  - Computes `currentMonthLikelihood` per location occurrence.
+  - Sorts locations by total observation count descending.
+  - `generateMetadata()` — dynamic title, description, OG image.
+  - JSON-LD `Thing` structured data.
+
+- **Client wrapper:** `src/app/species/[slug]/SpeciesPageClient.tsx`
+  - Hero section: full-width photo (or `photo-placeholder-species` gradient fallback), common name (Fraunces), scientific name (italic), quick facts row.
+  - Quick facts: size category, max length, IUCN status (colour-coded pill with all categories LC through EX), endemic/introduced badges.
+  - Dynamic tabs: if only 1 photo, Photos tab is hidden and About becomes default.
+  - Sticky tab bar below header on scroll.
+  - CTA banner below tabs: "Think you spotted one?" → `/id`.
+  - PhotoLightbox integration for photo viewing.
+  - Footer included.
+
+- **Photos tab:** `src/app/species/[slug]/PhotosTab.tsx`
+  - Client Component. `ResponsiveGrid` (2-col mobile, 3-col tablet, 4-col desktop) of photo tiles.
+  - 4:3 aspect ratio, rounded corners, hover zoom + photographer credit overlay.
+  - Click opens `PhotoLightbox` with full attribution.
+
+- **About tab:** `src/app/species/[slug]/AboutTab.tsx`
+  - Client Component. Summary section (free tier, always visible) or "coming soon" state.
+  - Deep dive section: if content exists, shows full text (Phase 1 — no Stripe gating yet). If null, shows teaser UI with gradient fade overlay and "Unlock the full story — A$9.99" CTA placeholder.
+  - Similar species section: grid of up to 4 species cards from same family, with hero photos and links to their species pages.
+
+- **Where & When tab:** `src/app/species/[slug]/WhereWhenTab.tsx`
+  - Client Component. Location rows with inline 12-month mini bar chart.
+  - Each month: colour-coded rectangle (emerald=common, amber=occasional, slate=rare, transparent=no data).
+  - Current month highlighted with ring indicator.
+  - Location name links to location page, region shown below.
+  - `LikelihoodPill` per location (from current month seasonality, falls back to confidence score).
+  - Legend row explaining the colour coding.
+  - Mobile: columns stack (location info above its seasonality chart).
+  - Empty state for species with no location data.
+
+### Deviations
+- None. All steps from the implementation prompt completed as specified.
+- Tab behaviour for single-photo species (skip Photos tab, default to About) implemented per spec.
+
+### Build
+- `npm run build` passes clean. Species page is 47.8 kB first load JS (includes Motion for PhotoLightbox).
