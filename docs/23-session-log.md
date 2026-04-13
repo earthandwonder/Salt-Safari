@@ -719,3 +719,90 @@
 
 ### Build
 - `npm run build` passes clean. `/alerts` page is 2.6 kB first load JS. API routes are 142 B each. Location page unchanged at 9.14 kB.
+
+---
+
+## Session 15 — Homepage: Wire to Real Data
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **Server Component data fetching:** `src/app/page.tsx`
+  - Fetches real counts from Supabase: species (published), locations (published), regions (published).
+  - Fetches In Season Now species via `species_seasonality` for current month (common/occasional likelihood), joined with species, location_species, locations, and regions.
+  - Computes active month counts per location_species to determine seasonal vs year-round (≤8 active months = seasonal).
+  - Three-tier priority fill: (1) seasonal + charismatic + in season → pulsing green badge, (2) seasonal + in season → green badge, (3) charismatic year-round → "Year-round" pill.
+  - Daily-seeded shuffle (mulberry32 PRNG seeded with YYYYMMDD) for deterministic tiebreaking within tiers — same cards all day, different tomorrow. Preserves ISR caching.
+  - Deduplicates species across locations (shows each species once at its first-encountered location).
+  - Capped at 8 species for the homepage row.
+  - Fetches published regions with location counts.
+  - `revalidate = 3600` for ISR (hourly revalidation).
+
+- **Client Component:** `src/app/HomePageClient.tsx`
+  - Adapted from existing prototype. Preserved: hero gradient + caustic overlay, search bar styling, phone mockup for Species ID promo, overall section structure.
+  - **Hero:** Real stats from database (species count with `toLocaleString()`, location count, region count). Singular/plural "Region(s)".
+  - **Search bar:** Now links to `/locations` instead of being a non-functional input.
+  - **In Season Now:** Real species cards with hero photos, season badges (pulsing green for seasonal, "Year-round" pill for charismatic backfill), location names, month ranges. Horizontal scroll on mobile, 4-5 col grid on desktop. "Get alerts" link points to `/alerts` (not `/premium`).
+  - **Alert teaser:** Updated copy — "Get monthly alerts when your favourite species come into season" with "Set up alerts" CTA linking to `/alerts`.
+  - **Explore by Region:** Real region data with hero images (gradient fallback if no image), location counts, capped at 6. "View all regions" link if >6 regions.
+  - **Species ID promo:** Preserved phone mockup and copy unchanged. CTA links to `/id`.
+  - **Premium section:** Updated from subscription pricing (A$4.99/mo, A$39.99/yr) to one-off A$9.99 purchase. New copy: "Lifetime access", "One-off purchase" badge, "No subscription. Pay once, keep forever." CTA: "Unlock Premium — A$9.99". Removed "Start Free Trial" and "Cancel anytime" text.
+  - **Footer:** Replaced inline footer with `<Footer />` component from Session 7.
+  - **Header:** `<Header />` rendered for navigation.
+
+- **Used shared components:** `Header`, `Footer`, `WaveDivider`.
+
+### Deviations
+- Search bar is now a link to `/locations` rather than a non-functional input — Phase 2 will add real search (per plan: "Search bar deferred to Phase 2").
+- In Season section hidden entirely if no species are in season (graceful empty state rather than showing stale/empty section).
+- Species without hero photos are excluded from homepage cards (visual quality requirement).
+
+### Build
+- `npm run build` passes clean. `/` page is 4.37 kB first load JS.
+
+---
+
+## Session 16 — Browse All Species + Credits + SEO
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **Browse All Species page:** `src/app/species/page.tsx` + `src/app/species/SpeciesBrowseClient.tsx`
+  - Server Component fetches all published species with `count: "exact"`. Extracts unique colours and habitats for filter options.
+  - Client Component handles search (by common/scientific name), filters (size, colour, habitat), sorting (A–Z or taxonomic), and pagination (50/page via URL search params).
+  - Sticky filter bar with dropdown filters, active filter pills (coral accent), sort toggle (A–Z / Taxonomy), clear all button.
+  - `ResponsiveGrid` (2-col mobile, 3-col desktop) of `SpeciesCard` components.
+  - Pagination with smart page number generation (ellipsis for large page counts).
+  - Sand background, subtle hero with species count.
+  - JSON-LD `CollectionPage` structured data.
+
+- **Credits page:** `src/app/credits/page.tsx`
+  - Server Component. Fetches photos grouped by photographer + source + license, with photographer website URLs.
+  - Table: photographer name (linked if website available), source (human-readable labels), license, photo count.
+  - Alternating row colors (sand/white). Tabular nums for counts.
+  - Data Sources section below table: iNaturalist, ALA, OBIS, WoRMS attribution.
+
+- **XML Sitemap:** `src/app/sitemap.ts`
+  - Dynamic generation from Supabase. Queries published regions, locations (with region slugs for correct URL paths), and species.
+  - Static pages: homepage, /species, /locations, /id, /credits, /privacy, /terms.
+  - Priority: homepage 1.0, browse pages 0.9, regions 0.8, locations 0.7, species 0.6.
+
+- **Robots.txt:** `src/app/robots.ts`
+  - Allows all crawlers on `/`. Disallows `/api/`, `/auth/`, `/login`, `/signup`.
+  - Points to sitemap at `saltsafari.com.au/sitemap.xml`.
+
+- **Canonical URLs:**
+  - Added `metadataBase: new URL("https://saltsafari.com.au")` to root `layout.tsx`.
+  - Added `alternates.canonical` to species detail pages (`/species/[slug]`), location pages (`/locations/[region]/[site]`), and region pages (`/locations/[region]`).
+
+- **Structured data:**
+  - Location pages already had `TouristAttraction` JSON-LD (Session 10).
+  - Species detail pages already had `Thing` JSON-LD (Session 9).
+  - Added `CollectionPage` JSON-LD to the species browse page.
+
+### Deviations
+- No structured data added to the homepage — it already has structured data via `HomePageClient` (Session 15).
+- Filters are client-side (all species loaded at once). Acceptable for current dataset size; can be moved server-side if species count grows to thousands.
+
+### Build
+- `npm run build` passes clean. `/species` browse page is 5.41 kB, `/credits` is 1.96 kB.

@@ -16,6 +16,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://saltsafari.com.au"),
   title: {
     default: "Salt Safari — Discover Marine Life at Every Dive Spot",
     template: "%s | Salt Safari",
