@@ -243,6 +243,16 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
 - The `first_observed_month` and `last_observed_month` on `location_species` can be derived from the seasonality data.
 - Install `tsx` as a dev dependency if not present: `npm install -D tsx`.
 
+**Findings from Session 3 (ALA + OBIS modules) — important for this session:**
+- **Filter junk scientific names from ALA:** ALA faceted results include entries with `scientificName` of "Not supplied" (238 obs at Cabbage Tree Bay). During normalisation (step 3), strip any records where `scientificName` is empty, "Not supplied", or lacks a space (genus-only names without a species epithet). Do this before dedup and WoRMS resolution.
+- **Use OBIS AphiaIDs directly — skip redundant WoRMS resolution:** OBIS records already contain WoRMS AphiaIDs in the `taxonID` field (extracted into `wormsAphiaId` by the OBIS module). In step 5, check if a species already has a `wormsAphiaId` from OBIS before calling WoRMS. Only resolve species from iNat and ALA that don't match an existing OBIS AphiaID. This can cut WoRMS API calls by 30-50%.
+- **OBIS returns 500 species (sorted by record count desc) from a total of 1,370 for Cabbage Tree Bay.** The un-fetched tail is low-observation species. No pagination needed — 500 is sufficient.
+- **ALA confidence weight stays at 1.0.** ALA data (after iNat exclusion) is a mix of AIMS/CSIRO surveys, museum specimens, and structured citizen science programs — all higher quality than casual observations. The log-scale cap at 1000 already neutralises inflated counts from any single source.
+
+**Findings from Session 2 (iNaturalist module) — important for this session:**
+- **500-species cap per taxon group:** The iNat `/species_counts` endpoint is called with `per_page=500`. The fish+sharks group (taxon_ids=47178,47273) hit this cap for Cabbage Tree Bay (returned exactly 500). High-diversity locations may truncate long-tail species. Options: (a) accept truncation (the missing species have the fewest observations and lowest confidence), (b) split fish+sharks into two separate calls (47178 and 47273), or (c) add pagination. Recommendation: accept truncation for now — the truncated species are the least observed and add marginal value.
+- **Taxonomy fields from iNat are mostly null:** The `/species_counts` endpoint does not return ancestor names — only `ancestor_ids` (numeric) and `iconic_taxon_name` (e.g. "Actinopterygii"). The iNat module stores `iconic_taxon_name` in the `class` field as a rough group; kingdom/phylum/order/family/genus are null. **The WoRMS `getWoRMSRecord()` response must be used to populate the full taxonomic hierarchy** (kingdom, phylum, class, order, family, genus) when upserting to the `species` table. This is the authoritative source for taxonomy.
+
 ---
 
 ### Session 5: Data Pipeline — Photo Pipeline

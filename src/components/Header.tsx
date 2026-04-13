@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const NAV_LINKS = [
   { href: "/locations", label: "Locations" },
@@ -10,8 +13,30 @@ const NAV_LINKS = [
 ];
 
 export default function Header() {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Get initial session
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -19,7 +44,7 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close menu on route change / resize
+  // Close menu on resize
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 768) setMenuOpen(false);
@@ -27,6 +52,17 @@ export default function Header() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setMenuOpen(false);
+    router.push("/");
+    router.refresh();
+  }
+
+  const displayName =
+    user?.user_metadata?.display_name || user?.email?.split("@")[0];
 
   return (
     <header
@@ -77,12 +113,37 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/premium"
-            className="bg-coral hover:bg-coral-dark text-white px-5 py-2 rounded-full text-sm font-medium transition-colors"
-          >
-            Start Free Trial
-          </Link>
+
+          {!loading && (
+            <>
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <span className="text-white/70 text-sm">{displayName}</span>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-white/50 hover:text-white text-sm transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/login"
+                    className="text-white/70 hover:text-white text-sm transition-colors"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="bg-coral hover:bg-coral-dark text-white px-5 py-2 rounded-full text-sm font-medium transition-colors"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Mobile hamburger */}
@@ -112,7 +173,7 @@ export default function Header() {
       {/* Mobile menu */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          menuOpen ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+          menuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <div className="px-6 pb-6 space-y-1">
@@ -126,13 +187,41 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/premium"
-            className="block mt-4 bg-coral hover:bg-coral-dark text-white text-center px-5 py-3 rounded-full font-medium transition-colors"
-            onClick={() => setMenuOpen(false)}
-          >
-            Start Free Trial
-          </Link>
+
+          {!loading && (
+            <>
+              {user ? (
+                <>
+                  <div className="py-3 text-white/60 text-sm border-b border-white/10">
+                    Signed in as {displayName}
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left py-3 text-white/80 hover:text-white text-lg"
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    className="block mt-4 bg-coral hover:bg-coral-dark text-white text-center px-5 py-3 rounded-full font-medium transition-colors"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Sign up
+                  </Link>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     </header>
