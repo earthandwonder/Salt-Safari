@@ -8,10 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "pipeline": "npx tsx --env-file=.env.local scripts/run-pipeline.ts",
-    "validate": "npx tsx --env-file=.env.local scripts/validate-and-publish.ts"
+    "validate": "npx tsx --env-file=.env.local scripts/validate-and-publish.ts",
+    "send-alerts": "npx tsx --env-file=.env.local scripts/send-alerts.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",
+    "@react-email/components": "^1.0.12",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "mapbox-gl": "^3.21.0",
@@ -19,7 +21,8 @@
     "next": "^15.3.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-map-gl": "^8.1.1"
+    "react-map-gl": "^8.1.1",
+    "resend": "^6.10.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.2",

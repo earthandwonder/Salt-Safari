@@ -647,3 +647,75 @@
 
 ### Build
 - `npm run build` passes clean. `/u/[username]` is 4.26 kB first load JS. `/trips/[id]` is 3.2 kB first load JS. OG image route is 135 B.
+
+---
+
+## Session 14 — "In Season Now" Alerts
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **API routes for alerts:**
+  - `POST /api/alerts` — subscribe to a species alert (upserts on user+species+location). Body: `{ speciesId, locationId }`. Authenticated.
+  - `GET /api/alerts` — list user's alerts with species and location details. Authenticated.
+  - `DELETE /api/alerts/[id]` — remove an alert (own only). Authenticated.
+  - `PATCH /api/alerts/[id]` — toggle enabled/disabled. Body: `{ enabled: boolean }`. Authenticated.
+
+- **Alert subscribe modal:** `src/components/AlertSubscribeModal.tsx`
+  - Client Component. Spring-animated modal (Motion).
+  - Shows species name + location name, "Notify me" button.
+  - Success state: checkmark animation + auto-close after 1.5s.
+  - Error handling with inline message.
+
+- **Alert bell icon on species cards:**
+  - `SpeciesTab.tsx` — each species card shows a bell icon button (top-left, below quick-log +) on hover for authenticated users.
+  - Already-alerted species show a solid teal bell indicator.
+  - `LocationPageClient.tsx` — fetches user's alerts on mount, passes `alertedSpeciesIds` and `onAlertSubscribe` callback to SpeciesTab, renders AlertSubscribeModal.
+
+- **Manage alerts page:** `src/app/alerts/page.tsx`
+  - Client Component. Redirects to `/login` if not authenticated.
+  - Dark hero with bell icon, wave divider to sand content.
+  - Each alert row: species photo + name + scientific name + location name, enable/disable toggle, delete button.
+  - Loading skeleton, empty state with CTA to explore locations.
+
+- **Header updated:** Added "Alerts" link (with bell icon) for authenticated users in both desktop nav and mobile menu.
+
+- **Email template:** `src/emails/season-alert.tsx`
+  - React Email template. Navy header with Salt Safari branding.
+  - Per-species cards with photo, name, likelihood, location.
+  - "View species" and "ID tool" links per species. "Log your sighting" CTA.
+  - Footer: data attribution disclaimer + manage alerts + unsubscribe links.
+  - Subject: "[Species] are at [Location] this month" (single) or "N species are in season this month" (multiple).
+
+- **Alert sender:** `src/lib/alerts/send-alerts.ts`
+  - Queries all enabled `species_alerts` with species + location data.
+  - Joins with `species_seasonality` for current and previous month.
+  - Only sends alerts when species TRANSITIONS into season (previous month was rare/absent, current month is common/occasional).
+  - Groups alerts by user — one email per user with all their in-season species.
+  - Respects `notification_prefs = 'none'` (skips those users).
+  - Fetches user emails via Supabase admin API.
+  - Renders React Email template to HTML, sends via Resend.
+  - Supports `--dry-run` mode for testing.
+
+- **Cron API route:** `src/app/api/cron/alerts/route.ts`
+  - GET endpoint protected by `CRON_SECRET` bearer token.
+  - Calls `sendSeasonAlerts()` and returns results.
+
+- **CLI script:** `scripts/send-alerts.ts`
+  - Usage: `npm run send-alerts [-- --dry-run]`
+  - Package.json script: `"send-alerts": "npx tsx --env-file=.env.local scripts/send-alerts.ts"`.
+
+- **Vercel cron config:** `vercel.json`
+  - Cron job: `/api/cron/alerts` runs on the 1st of each month (`0 0 1 * *`).
+
+- **Dependencies added:** `resend`, `@react-email/components`.
+
+- **Env vars:** Added `CRON_SECRET` and `NEXT_PUBLIC_BASE_URL` to `.env.example`.
+
+### Deviations
+- Q3 (Resend API key) and Q13 (sender domain) — no answers provided in `22-implementation-questions.md`. Using values from `.env.local` (`RESEND_API_KEY` and `RESEND_FROM_EMAIL=alerts@earthandwonder.com`).
+- Alert subscription on the species page (from species → location context) not implemented — the species page doesn't have a single location context. Users subscribe via the location page's species cards where both species and location are known. The alerts management page is accessible from the species page via the header.
+- No "Get alerts" link on individual species cards (SpeciesCard component) — the bell icon is overlaid on the card wrapper in SpeciesTab instead, matching the quick-log button pattern.
+
+### Build
+- `npm run build` passes clean. `/alerts` page is 2.6 kB first load JS. API routes are 142 B each. Location page unchanged at 9.14 kB.

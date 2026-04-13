@@ -12,10 +12,13 @@ interface SpeciesTabProps {
   totalSpecies: number;
   inSeasonCount: number;
   spottedIds: Set<string>;
+  alertedSpeciesIds: Set<string>;
   isAuthenticated: boolean;
   authChecked: boolean;
   locationName: string;
+  locationId: string;
   onLogSighting?: (speciesId?: string) => void;
+  onAlertSubscribe?: (speciesId: string, speciesName: string) => void;
 }
 
 type SeasonFilter = "all" | "in-season";
@@ -26,10 +29,13 @@ export function SpeciesTab({
   totalSpecies,
   inSeasonCount,
   spottedIds,
+  alertedSpeciesIds,
   isAuthenticated,
   authChecked,
   locationName,
+  locationId,
   onLogSighting,
+  onAlertSubscribe,
 }: SpeciesTabProps) {
   const [seasonFilter, setSeasonFilter] = useState<SeasonFilter>("all");
   const [likelihoodFilter, setLikelihoodFilter] = useState<LikelihoodFilter>("all");
@@ -242,6 +248,35 @@ export function SpeciesTab({
                       <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                   </button>
+                )}
+                {/* Alert bell — show for authenticated users, on species not already alerted */}
+                {isAuthenticated && onAlertSubscribe && !alertedSpeciesIds.has(species.id) && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onAlertSubscribe(species.id, species.name);
+                    }}
+                    className="absolute top-10 left-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md opacity-0 group-hover/card:opacity-100 transition-opacity z-10 hover:bg-teal-500 hover:text-white text-slate-500"
+                    title={`Get alerts for ${species.name}`}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                  </button>
+                )}
+                {/* Already alerted indicator */}
+                {alertedSpeciesIds.has(species.id) && (
+                  <div
+                    className="absolute top-10 left-2 w-7 h-7 rounded-full bg-teal-500 flex items-center justify-center shadow-md z-10"
+                    title="Alert set"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                  </div>
                 )}
               </div>
             );

@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import { TabBar, TabPanel } from "@/components/TabBar";
 import { Footer } from "@/components/Footer";
 import { LogSightingModal } from "@/components/LogSightingModal";
+import { AlertSubscribeModal } from "@/components/AlertSubscribeModal";
 import type { Location, Region } from "@/types";
 import type { LocationSpeciesWithDetails } from "./page";
 import { SpeciesTab } from "./SpeciesTab";
@@ -63,6 +64,9 @@ export function LocationPageClient({
   const [authChecked, setAuthChecked] = useState(false);
   const [sightingModalOpen, setSightingModalOpen] = useState(false);
   const [preSelectedSpeciesId, setPreSelectedSpeciesId] = useState<string | null>(null);
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [alertSpecies, setAlertSpecies] = useState<{ id: string; name: string } | null>(null);
+  const [alertedSpeciesIds, setAlertedSpeciesIds] = useState<Set<string>>(new Set());
 
   // Check auth + fetch sightings
   useEffect(() => {
@@ -84,6 +88,18 @@ export function LocationPageClient({
           if (sightings) {
             setSpottedIds(new Set(sightings.map((s) => s.species_id)));
           }
+
+          // Fetch user's alerts at this location
+          const { data: alerts } = await supabase
+            .from("species_alerts")
+            .select("species_id")
+            .eq("user_id", user.id)
+            .eq("location_id", location.id)
+            .eq("enabled", true);
+
+          if (alerts) {
+            setAlertedSpeciesIds(new Set(alerts.map((a) => a.species_id)));
+          }
         }
       } catch {
         // Auth check failed silently
@@ -100,6 +116,16 @@ export function LocationPageClient({
 
   const handleSightingSuccess = useCallback((speciesId: string) => {
     setSpottedIds((prev) => new Set([...prev, speciesId]));
+  }, []);
+
+  const handleAlertSubscribe = useCallback((speciesId: string, speciesName: string) => {
+    if (!isAuthenticated) return;
+    setAlertSpecies({ id: speciesId, name: speciesName });
+    setAlertModalOpen(true);
+  }, [isAuthenticated]);
+
+  const handleAlertSubscribed = useCallback((speciesId: string) => {
+    setAlertedSpeciesIds((prev) => new Set([...prev, speciesId]));
   }, []);
 
   const skill = location.skill_level ? skillConfig[location.skill_level] : null;
@@ -231,10 +257,13 @@ export function LocationPageClient({
               totalSpecies={totalSpecies}
               inSeasonCount={inSeasonCount}
               spottedIds={spottedIds}
+              alertedSpeciesIds={alertedSpeciesIds}
               isAuthenticated={isAuthenticated}
               authChecked={authChecked}
               locationName={location.name}
+              locationId={location.id}
               onLogSighting={handleOpenSightingModal}
+              onAlertSubscribe={handleAlertSubscribe}
             />
           </TabPanel>
 
@@ -348,6 +377,22 @@ export function LocationPageClient({
         }))}
         preSelectedSpeciesId={preSelectedSpeciesId}
       />
+
+      {/* Alert Subscribe Modal */}
+      {alertSpecies && (
+        <AlertSubscribeModal
+          isOpen={alertModalOpen}
+          onClose={() => {
+            setAlertModalOpen(false);
+            setAlertSpecies(null);
+          }}
+          speciesId={alertSpecies.id}
+          speciesName={alertSpecies.name}
+          locationId={location.id}
+          locationName={location.name}
+          onSubscribed={() => handleAlertSubscribed(alertSpecies.id)}
+        />
+      )}
     </div>
   );
 }
