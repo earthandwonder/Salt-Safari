@@ -56,7 +56,7 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
   if (!location) return null;
 
   // 3. Fetch all location_species with joined species data
-  // Supabase returns max 1000 rows by default — paginate
+  // All species shown in the Species tab; only is_spottable ones in the Spotted tab.
   const allLocationSpecies: (LocationSpecies & { species: Species })[] = [];
   let from = 0;
   const pageSize = 500;
@@ -101,8 +101,17 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
     }
   }
 
-  // 5. Build enriched species list
-  const speciesList: LocationSpeciesWithDetails[] = allLocationSpecies.map((ls) => {
+  // 5. Deduplicate by species ID — keep the location_species row with the most observations
+  const deduped = new Map<string, (typeof allLocationSpecies)[number]>();
+  for (const ls of allLocationSpecies) {
+    const existing = deduped.get(ls.species.id);
+    if (!existing || (ls.total_observations ?? 0) > (existing.total_observations ?? 0)) {
+      deduped.set(ls.species.id, ls);
+    }
+  }
+
+  // 6. Build enriched species list
+  const speciesList: LocationSpeciesWithDetails[] = Array.from(deduped.values()).map((ls) => {
     const seasonality = seasonalityMap.get(ls.id) ?? [];
     const activeMonths = seasonality.filter(
       (s) => s.likelihood === "common" || s.likelihood === "occasional"
@@ -124,7 +133,7 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
     };
   });
 
-  // 6. Sort: in-season first (by likelihood desc), then common, then occasional/rare, then out-of-season
+  // 7. Sort: in-season first (by likelihood desc), then common, then occasional/rare, then out-of-season
   const likelihoodOrder: Record<string, number> = { common: 0, occasional: 1, rare: 2 };
   speciesList.sort((a, b) => {
     // In season first
@@ -144,7 +153,7 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
     return (b.locationSpecies.total_observations ?? 0) - (a.locationSpecies.total_observations ?? 0);
   });
 
-  // 7. Best time to visit — month with highest average species activity
+  // 8. Best time to visit — month with highest average species activity
   const monthActivity = new Array(12).fill(0);
   for (const [, entries] of seasonalityMap) {
     for (const entry of entries) {
@@ -159,7 +168,7 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
   ];
   const bestTimeToVisit = monthActivity[bestMonthIndex] > 0 ? monthNames[bestMonthIndex] : null;
 
-  // 8. Nearby locations from same region
+  // 9. Nearby locations from same region
   const { data: nearbyRaw } = await supabase
     .from("locations")
     .select("id, name, slug, hero_image_url, skill_level, depth_min, depth_max, activities")
@@ -185,13 +194,17 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
     }
   }
 
+  const spottableList = speciesList.filter((s) => s.locationSpecies.is_spottable);
+
   return {
     region: region as Region,
     location: location as Location,
     speciesList,
+    spottableList,
     bestTimeToVisit,
     nearbyLocations,
     totalSpecies: speciesList.length,
+    spottableCount: spottableList.length,
     inSeasonCount: speciesList.filter((s) => s.isInSeason).length,
   };
 }
@@ -229,7 +242,7 @@ export default async function LocationPage({ params }: PageProps) {
   const data = await getLocationData(regionSlug, siteSlug);
   if (!data) notFound();
 
-  const { region, location, speciesList, bestTimeToVisit, nearbyLocations, totalSpecies, inSeasonCount } = data;
+  const { region, location, speciesList, spottableList, bestTimeToVisit, nearbyLocations, totalSpecies, spottableCount, inSeasonCount } = data;
 
   // JSON-LD structured data
   const jsonLd = {
@@ -266,9 +279,11 @@ export default async function LocationPage({ params }: PageProps) {
         region={region}
         location={location}
         speciesList={speciesList}
+        spottableList={spottableList}
         bestTimeToVisit={bestTimeToVisit}
         nearbyLocations={nearbyLocations}
         totalSpecies={totalSpecies}
+        spottableCount={spottableCount}
         inSeasonCount={inSeasonCount}
         regionSlug={regionSlug}
       />

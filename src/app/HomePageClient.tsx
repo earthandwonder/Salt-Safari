@@ -20,13 +20,14 @@ type InSeasonSpecies = {
   monthRange: string;
 };
 
-type RegionWithCounts = {
+type FeaturedLocation = {
   id: string;
   name: string;
   slug: string;
   description: string | null;
   heroImageUrl: string | null;
-  locationCount: number;
+  regionSlug: string;
+  speciesCount: number;
 };
 
 interface HomePageClientProps {
@@ -34,7 +35,7 @@ interface HomePageClientProps {
   locationCount: number;
   regionCount: number;
   inSeasonSpecies: InSeasonSpecies[];
-  regions: RegionWithCounts[];
+  featuredLocations: FeaturedLocation[];
 }
 
 export function HomePageClient({
@@ -42,7 +43,7 @@ export function HomePageClient({
   locationCount,
   regionCount,
   inSeasonSpecies,
-  regions,
+  featuredLocations,
 }: HomePageClientProps) {
   return (
     <main>
@@ -232,12 +233,12 @@ export function HomePageClient({
       )}
 
       {/* ──────────────────────────────────────────
-          BROWSE BY REGION
+          BROWSE LOCATIONS
           ────────────────────────────────────────── */}
       <section className="bg-white section-padding">
         <div className="max-w-7xl mx-auto">
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-3">
-            Explore by region
+            Explore locations
           </h2>
           <p className="text-slate-500 mb-10 max-w-lg">
             Browse snorkelling and diving locations across Australia. Each spot
@@ -245,19 +246,19 @@ export function HomePageClient({
           </p>
 
           <div className="grid sm:grid-cols-2 gap-6">
-            {regions.slice(0, 6).map((region) => (
+            {featuredLocations.slice(0, 6).map((location) => (
               <Link
-                key={region.id}
-                href={`/locations/${region.slug}`}
+                key={location.id}
+                href={`/locations/${location.regionSlug}/${location.slug}`}
                 className="group"
               >
                 <div className="card-lift rounded-2xl overflow-hidden">
                   <div className="aspect-[16/9] md:aspect-[2/1] relative overflow-hidden">
-                    {region.heroImageUrl ? (
+                    {location.heroImageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={region.heroImageUrl}
-                        alt={region.name}
+                        src={location.heroImageUrl}
+                        alt={location.name}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                       />
@@ -267,10 +268,10 @@ export function HomePageClient({
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6">
                       <h3 className="font-display text-2xl md:text-3xl font-semibold text-white">
-                        {region.name}
+                        {location.name}
                       </h3>
                       <p className="text-white/70 text-sm mt-1">
-                        {region.locationCount} {region.locationCount === 1 ? "location" : "locations"}
+                        {location.speciesCount} {location.speciesCount === 1 ? "species" : "species"}
                       </p>
                     </div>
                   </div>
@@ -279,13 +280,13 @@ export function HomePageClient({
             ))}
           </div>
 
-          {regions.length > 6 && (
+          {featuredLocations.length > 6 && (
             <div className="mt-8 text-center">
               <Link
                 href="/locations"
                 className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
               >
-                View all regions
+                View all locations
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>

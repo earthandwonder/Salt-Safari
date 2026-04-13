@@ -912,74 +912,13 @@ Goal: Cabbage Tree Bay fully working — pipeline, pages, auth, sighting log, al
 
 ---
 
-## Phase 2: Expand Locations + Enrich
+## Phase 2: Enrich + Complete Features
 
-Goal: All Sydney + Central Coast locations, search, admin dashboard, FishBase enrichment.
-
----
-
-### Session 18: Bulk Seed Locations
-
-**Goal:** Add all Sydney and Central Coast dive/snorkel locations to the database.
-
-**Steps:**
-
-1. **Create seed scripts**
-   - `scripts/seed-sydney.sql` — all Sydney locations (use the data from `data/csv/locations.csv` and `data/locations/*.md` as **reference only** for names, coords, and basic info). Cross-reference with the plan doc's location list.
-   - `scripts/seed-central-coast.sql` — Central Coast locations.
-   - Each location needs: name, slug, lat, lng, radius_km, activities, skill_level, region_id, data_quality='stub'.
-
-2. **Coordinate sourcing**
-   - The reference CSVs may have coordinates. If not, use Google Maps to find accurate lat/lng for each location.
-   - Set `coords_source = 'google_maps'` or `'manual'`.
-
-3. **Run seeds**
-   - Execute against the database.
-   - Verify all locations appear with correct region associations.
-
-4. **Ensure Central Coast region exists**
-   - Check if the Central Coast region was seeded. If not, add it.
-
-**Guidance:**
-- The `data/csv/locations.csv` is reference material from the old Notion site. Use it for names and basic info, but verify coordinates independently.
-- Location slugs must be unique within a region.
-- Set `published = FALSE` initially — locations get published after pipeline runs and validation.
-- Expect ~22 Sydney locations and ~5 Central Coast locations based on the reference data.
+Goal: Enrich Cabbage Tree Bay data, build search/maps/admin/legal — complete the feature set for one beach before expanding.
 
 ---
 
-### Session 19: Run Pipeline Across All Locations
-
-**Goal:** Run the species + photo pipeline for every seeded location. Spot-check results.
-
-**Steps:**
-
-1. **Add bulk pipeline support**
-   - Update `scripts/run-pipeline.ts` to accept `--all` flag: runs pipeline for every location in the database.
-   - Add progress logging: "Processing location 3/27: Bare Island..."
-   - Add error handling: if one location fails, log the error and continue to the next.
-
-2. **Run the pipeline**
-   - `npm run pipeline -- --all`
-   - This will take a while (27 locations × 6+ API calls each + seasonality + photos = likely 30-60 minutes).
-   - Run photos separately if needed: `npm run pipeline -- --all --photos`
-
-3. **Spot-check results**
-   - Query database: how many species total? How many per location? Any locations with suspiciously few or many species?
-   - Check a few locations you know well — do the species lists match reality?
-   - Check for deduplication issues — same species appearing twice under different names?
-
-4. **Publish validated locations**
-   - Set `published = TRUE` for locations that look correct.
-   - Mark questionable ones for review.
-
-**Guidance:**
-- This is a long-running process. Monitor it. If it crashes partway through, the pipeline should be idempotent (upserts, not inserts) so you can re-run safely.
-- Some locations may have very few species (if they're remote or the search radius is too small). That's okay — adjust radius and re-run if needed.
-
----
-
-### Session 20: FishBase Enrichment
+### Session 18: FishBase Enrichment
 
 **Goal:** Import depth, habitat, and size data from FishBase to enrich species records.
 
@@ -1012,7 +951,7 @@ Goal: All Sydney + Central Coast locations, search, admin dashboard, FishBase en
 
 ---
 
-### Session 21: Search & Filtering
+### Session 19: Search & Filtering
 
 **Goal:** Full-text search across species and locations.
 
@@ -1068,7 +1007,7 @@ Goal: All Sydney + Central Coast locations, search, admin dashboard, FishBase en
 
 ---
 
-### Session 22: Mapbox Maps on All Pages
+### Session 20: Mapbox Maps on All Pages
 
 **Goal:** Ensure all location and region pages have working Mapbox maps.
 
@@ -1102,7 +1041,7 @@ Goal: All Sydney + Central Coast locations, search, admin dashboard, FishBase en
 
 ---
 
-### Session 23: Admin Dashboard
+### Session 21: Admin Dashboard
 
 **Goal:** Protected admin interface for managing content and triggering pipeline runs.
 
@@ -1137,7 +1076,7 @@ Goal: All Sydney + Central Coast locations, search, admin dashboard, FishBase en
 
 ---
 
-### Session 24: Legal Pages + Google Search Console
+### Session 22: Legal Pages + Google Search Console
 
 **Goal:** Privacy policy, terms of service, cookie consent, DMCA page.
 
@@ -1166,6 +1105,73 @@ Goal: All Sydney + Central Coast locations, search, admin dashboard, FishBase en
 - These pages can be mostly static content. Use AI to draft the legal text but flag to the user that it should be reviewed by a lawyer before going live.
 - Keep cookie consent simple. Don't use a complex cookie management platform.
 - Link privacy/terms from the Footer component.
+
+---
+
+## Phase 2b: Expand Locations
+
+Goal: Now that the feature set is complete for Cabbage Tree Bay, expand to all Sydney + Central Coast locations.
+
+---
+
+### Session 23: Bulk Seed Locations
+
+**Goal:** Add all Sydney and Central Coast dive/snorkel locations to the database.
+
+**Steps:**
+
+1. **Create seed scripts**
+   - `scripts/seed-sydney.sql` — all Sydney locations (use the data from `data/csv/locations.csv` and `data/locations/*.md` as **reference only** for names, coords, and basic info). Cross-reference with the plan doc's location list.
+   - `scripts/seed-central-coast.sql` — Central Coast locations.
+   - Each location needs: name, slug, lat, lng, radius_km, activities, skill_level, region_id, data_quality='stub'.
+
+2. **Coordinate sourcing**
+   - The reference CSVs may have coordinates. If not, use Google Maps to find accurate lat/lng for each location.
+   - Set `coords_source = 'google_maps'` or `'manual'`.
+
+3. **Run seeds**
+   - Execute against the database.
+   - Verify all locations appear with correct region associations.
+
+4. **Ensure Central Coast region exists**
+   - Check if the Central Coast region was seeded. If not, add it.
+
+**Guidance:**
+- The `data/csv/locations.csv` is reference material from the old Notion site. Use it for names and basic info, but verify coordinates independently.
+- Location slugs must be unique within a region.
+- Set `published = FALSE` initially — locations get published after pipeline runs and validation.
+- Expect ~22 Sydney locations and ~5 Central Coast locations based on the reference data.
+
+---
+
+### Session 24: Run Pipeline Across All Locations
+
+**Goal:** Run the species + photo pipeline for every seeded location. Spot-check results.
+
+**Steps:**
+
+1. **Add bulk pipeline support**
+   - Update `scripts/run-pipeline.ts` to accept `--all` flag: runs pipeline for every location in the database.
+   - Add progress logging: "Processing location 3/27: Bare Island..."
+   - Add error handling: if one location fails, log the error and continue to the next.
+
+2. **Run the pipeline**
+   - `npm run pipeline -- --all`
+   - This will take a while (27 locations × 6+ API calls each + seasonality + photos = likely 30-60 minutes).
+   - Run photos separately if needed: `npm run pipeline -- --all --photos`
+
+3. **Spot-check results**
+   - Query database: how many species total? How many per location? Any locations with suspiciously few or many species?
+   - Check a few locations you know well — do the species lists match reality?
+   - Check for deduplication issues — same species appearing twice under different names?
+
+4. **Publish validated locations**
+   - Set `published = TRUE` for locations that look correct.
+   - Mark questionable ones for review.
+
+**Guidance:**
+- This is a long-running process. Monitor it. If it crashes partway through, the pipeline should be idempotent (upserts, not inserts) so you can re-run safely.
+- Some locations may have very few species (if they're remote or the search radius is too small). That's okay — adjust radius and re-run if needed.
 
 ---
 

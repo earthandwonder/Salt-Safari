@@ -91,6 +91,7 @@ export type LocationSpecies = {
   last_observed_month: number | null;
   season_notes: string | null;
   verified: boolean;
+  is_spottable: boolean;
   last_synced_at: string | null;
   created_at: string;
   updated_at: string;

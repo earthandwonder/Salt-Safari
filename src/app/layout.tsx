@@ -45,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${outfit.variable}`}>
+    <html lang="en" className={`${fraunces.variable} ${outfit.variable}`} suppressHydrationWarning>
       <body className="font-body antialiased">{children}</body>
     </html>
   );

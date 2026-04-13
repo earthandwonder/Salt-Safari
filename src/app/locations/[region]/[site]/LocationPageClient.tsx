@@ -10,6 +10,7 @@ import { AlertSubscribeModal } from "@/components/AlertSubscribeModal";
 import type { Location, Region } from "@/types";
 import type { LocationSpeciesWithDetails } from "./page";
 import { SpeciesTab } from "./SpeciesTab";
+import { SpottedTab } from "./SpottedTab";
 import { MapTab } from "./MapTab";
 
 type NearbyLocation = {
@@ -29,15 +30,18 @@ interface LocationPageClientProps {
   region: Region;
   location: Location;
   speciesList: LocationSpeciesWithDetails[];
+  spottableList: LocationSpeciesWithDetails[];
   bestTimeToVisit: string | null;
   nearbyLocations: NearbyLocation[];
   totalSpecies: number;
+  spottableCount: number;
   inSeasonCount: number;
   regionSlug: string;
 }
 
 const TABS = [
   { id: "species", label: "Species" },
+  { id: "spotted", label: "Spotted" },
   { id: "about", label: "About" },
   { id: "map", label: "Map" },
 ];
@@ -52,9 +56,11 @@ export function LocationPageClient({
   region,
   location,
   speciesList,
+  spottableList,
   bestTimeToVisit,
   nearbyLocations,
   totalSpecies,
+  spottableCount,
   inSeasonCount,
   regionSlug,
 }: LocationPageClientProps) {
@@ -256,14 +262,25 @@ export function LocationPageClient({
               speciesList={speciesList}
               totalSpecies={totalSpecies}
               inSeasonCount={inSeasonCount}
-              spottedIds={spottedIds}
               alertedSpeciesIds={alertedSpeciesIds}
+              isAuthenticated={isAuthenticated}
+              locationName={location.name}
+              locationId={location.id}
+              onAlertSubscribe={handleAlertSubscribe}
+            />
+          </TabPanel>
+
+          {/* Spotted Tab */}
+          <TabPanel tabId="spotted" activeTab={activeTab}>
+            <SpottedTab
+              speciesList={spottableList}
+              totalSpecies={spottableCount}
+              spottedIds={spottedIds}
               isAuthenticated={isAuthenticated}
               authChecked={authChecked}
               locationName={location.name}
               locationId={location.id}
               onLogSighting={handleOpenSightingModal}
-              onAlertSubscribe={handleAlertSubscribe}
             />
           </TabPanel>
 

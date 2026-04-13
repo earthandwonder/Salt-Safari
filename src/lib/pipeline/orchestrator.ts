@@ -62,6 +62,131 @@ function isValidSpeciesRecord(record: RawSpeciesRecord): boolean {
   return true;
 }
 
+// --- Spottable classification ---
+
+const EXCLUDED_PHYLA = new Set([
+  "Rhodophyta", "Chlorophyta", "Ochrophyta", "Porifera", "Bryozoa",
+  "Annelida", "Entoprocta", "Sipuncula", "Nemertea", "Platyhelminthes",
+  "Foraminifera", "Ciliophora", "Bacillariophyta", "Myzozoa", "Haptophyta",
+  "Tracheophyta",
+]);
+
+// Mollusca: only allow cephalopods and nudibranchs
+const MOLLUSC_ALLOWED_CLASSES = new Set(["Cephalopoda"]);
+const MOLLUSC_ALLOWED_ORDERS = new Set(["Nudibranchia", "Doridida"]);
+
+const CHARISMATIC_RULES: { field: string; value: string }[] = [
+  { field: "class", value: "Elasmobranchii" },
+  { field: "class", value: "Chondrichthyes" },
+  { field: "order", value: "Testudines" },
+  { field: "family", value: "Syngnathidae" },
+  { field: "order", value: "Octopoda" },
+  { field: "order", value: "Sepiida" },
+  { field: "order", value: "Myopsida" },
+  { field: "order", value: "Sepiolida" },
+  { field: "order", value: "Cetacea" },
+  { field: "order", value: "Cetartiodactyla" },
+  { field: "order", value: "Pinnipedia" },
+];
+
+const SPOTTABLE_MAX = 200;
+const SPOTTABLE_MIN_OBS_CHARISMATIC = 30;
+const SPOTTABLE_MIN_OBS_REGULAR = 3;
+
+async function markSpottableSpecies(
+  supabase: SupabaseClient,
+  locationId: string
+): Promise<number> {
+  // Fetch all location_species with taxonomy
+  type SpeciesRow = {
+    id: string;
+    total_observations: number;
+    species: {
+      phylum: string | null;
+      class: string | null;
+      order: string | null;
+      family: string | null;
+      is_charismatic: boolean;
+    };
+  };
+
+  const allRows: SpeciesRow[] = [];
+  let from = 0;
+  const pageSize = 500;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data: batch } = await supabase
+      .from("location_species")
+      .select("id, total_observations, species!inner(phylum, class, order, family, is_charismatic)")
+      .eq("location_id", locationId)
+      .range(from, from + pageSize - 1)
+      .order("total_observations", { ascending: false });
+
+    if (!batch || batch.length === 0) {
+      hasMore = false;
+    } else {
+      allRows.push(...(batch as unknown as SpeciesRow[]));
+      from += pageSize;
+      if (batch.length < pageSize) hasMore = false;
+    }
+  }
+
+  // Reset all to false
+  await supabase
+    .from("location_species")
+    .update({ is_spottable: false })
+    .eq("location_id", locationId);
+
+  // Filter: excluded phyla, birds, molluscs (except cephalopods + nudis)
+  const isEligibleRow = (r: SpeciesRow): boolean => {
+    const sp = r.species;
+    if (sp.phylum && EXCLUDED_PHYLA.has(sp.phylum)) return false;
+    if (sp.class === "Aves") return false;
+    if (sp.phylum === "Mollusca") {
+      if (sp.class && MOLLUSC_ALLOWED_CLASSES.has(sp.class)) return true;
+      if (sp.order && MOLLUSC_ALLOWED_ORDERS.has(sp.order)) return true;
+      return false;
+    }
+    return true;
+  };
+
+  const eligible = allRows.filter(isEligibleRow);
+
+  // Split charismatic vs regular
+  const isCharismaticRow = (r: SpeciesRow): boolean => {
+    if (r.species.is_charismatic) return true;
+    for (const rule of CHARISMATIC_RULES) {
+      const val = r.species[rule.field as keyof typeof r.species];
+      if (val === rule.value) return true;
+    }
+    return false;
+  };
+
+  const charismatic = eligible
+    .filter((r) => isCharismaticRow(r) && r.total_observations >= SPOTTABLE_MIN_OBS_CHARISMATIC)
+    .sort((a, b) => b.total_observations - a.total_observations);
+  const regular = eligible
+    .filter((r) => !isCharismaticRow(r))
+    .filter((r) => r.total_observations >= SPOTTABLE_MIN_OBS_REGULAR)
+    .sort((a, b) => b.total_observations - a.total_observations);
+
+  const regularSlots = Math.max(0, SPOTTABLE_MAX - charismatic.length);
+  const selected = [...charismatic, ...regular.slice(0, regularSlots)];
+
+  // Mark as spottable in batches
+  const ids = selected.map((r) => r.id);
+  for (let i = 0; i < ids.length; i += 200) {
+    const batch = ids.slice(i, i + 200);
+    await supabase
+      .from("location_species")
+      .update({ is_spottable: true })
+      .in("id", batch);
+  }
+
+  return selected.length;
+}
+
 // --- Confidence scoring ---
 
 const SOURCE_WEIGHTS: Record<PipelineSource, number> = {
@@ -551,7 +676,12 @@ export async function runPipelineForLocation(
 
   console.log(`[Pipeline] Seasonality written for ${seasonalityCount} species`);
 
-  // Step 14: Update location metadata
+  // Step 14: Mark spottable species
+  console.log(`\n[Pipeline] Marking spottable species...`);
+  const spottableCount = await markSpottableSpecies(supabase, location.id);
+  console.log(`[Pipeline] Marked ${spottableCount} species as spottable`);
+
+  // Step 15: Update location metadata
   await supabase
     .from("locations")
     .update({

@@ -18,13 +18,14 @@ type InSeasonSpecies = {
   monthRange: string;
 };
 
-type RegionWithCounts = {
+type FeaturedLocation = {
   id: string;
   name: string;
   slug: string;
   description: string | null;
   heroImageUrl: string | null;
-  locationCount: number;
+  regionSlug: string;
+  speciesCount: number;
 };
 
 /**
@@ -70,16 +71,16 @@ export default async function HomePage() {
     { count: speciesCount },
     { count: locationCount },
     { count: regionCount },
-    { data: regions },
+    { data: locations },
     { data: seasonalityData },
   ] = await Promise.all([
     supabase.from("species").select("*", { count: "exact", head: true }).eq("published", true),
     supabase.from("locations").select("*", { count: "exact", head: true }).eq("published", true),
     supabase.from("regions").select("*", { count: "exact", head: true }).eq("published", true),
-    // Regions with location counts
+    // Featured locations
     supabase
-      .from("regions")
-      .select("id, name, slug, description, hero_image_url")
+      .from("locations")
+      .select("id, name, slug, description, hero_image_url, region_id, region:region_id ( slug )")
       .eq("published", true)
       .order("name"),
     // Species in season this month (common or occasional)
@@ -108,30 +109,31 @@ export default async function HomePage() {
       .in("likelihood", ["common", "occasional"]),
   ]);
 
-  // --- Fetch location counts per region ---
-  const regionIds = (regions ?? []).map((r) => r.id);
-  const regionWithCounts: RegionWithCounts[] = [];
+  // --- Fetch species counts per location ---
+  const locationIds = (locations ?? []).map((l) => l.id);
+  const featuredLocations: FeaturedLocation[] = [];
 
-  if (regionIds.length > 0) {
-    const { data: locationRows } = await supabase
-      .from("locations")
-      .select("id, region_id")
-      .eq("published", true)
-      .in("region_id", regionIds);
+  if (locationIds.length > 0) {
+    const { data: lsRows } = await supabase
+      .from("location_species")
+      .select("id, location_id")
+      .in("location_id", locationIds);
 
-    const countByRegion: Record<string, number> = {};
-    for (const loc of locationRows ?? []) {
-      countByRegion[loc.region_id] = (countByRegion[loc.region_id] ?? 0) + 1;
+    const countByLocation: Record<string, number> = {};
+    for (const ls of lsRows ?? []) {
+      countByLocation[ls.location_id] = (countByLocation[ls.location_id] ?? 0) + 1;
     }
 
-    for (const region of regions ?? []) {
-      regionWithCounts.push({
-        id: region.id,
-        name: region.name,
-        slug: region.slug,
-        description: region.description,
-        heroImageUrl: region.hero_image_url,
-        locationCount: countByRegion[region.id] ?? 0,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const loc of (locations ?? []) as any[]) {
+      featuredLocations.push({
+        id: loc.id,
+        name: loc.name,
+        slug: loc.slug,
+        description: loc.description,
+        heroImageUrl: loc.hero_image_url,
+        regionSlug: loc.region?.slug ?? "",
+        speciesCount: countByLocation[loc.id] ?? 0,
       });
     }
   }
@@ -222,7 +224,7 @@ export default async function HomePage() {
       locationCount={locationCount ?? 0}
       regionCount={regionCount ?? 0}
       inSeasonSpecies={sorted}
-      regions={regionWithCounts}
+      featuredLocations={featuredLocations}
     />
   );
 }

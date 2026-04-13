@@ -208,58 +208,73 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Score each species based on matching criteria
+  // Score each species using weighted criteria.
+  // Colour and size are the most distinctive signals a user provides,
+  // so they get higher weight than habitat/seasonality.
+  const WEIGHT_SIZE = 3;
+  const WEIGHT_COLOUR = 4;
+  const WEIGHT_HABITAT = 1.5;
+  const WEIGHT_SEASON = 1.5;
+
   const scored: MatchedSpecies[] = [];
 
   for (const sp of allSpecies) {
-    let matchCount = 0;
-    let totalCriteria = 0;
+    let weightedScore = 0;
+    let totalWeight = 0;
 
-    // Size match
+    // Size match (weight 3)
     if (size) {
-      totalCriteria++;
+      totalWeight += WEIGHT_SIZE;
       if (sp.size_category === size) {
-        matchCount++;
+        weightedScore += WEIGHT_SIZE;
       }
     }
 
-    // Colour match (any overlap)
+    // Colour match — proportional: matching 2/3 selected colours scores
+    // higher than matching 1/3 (weight 4)
     if (colours.length > 0) {
-      totalCriteria++;
+      totalWeight += WEIGHT_COLOUR;
       if (sp.colours && sp.colours.length > 0) {
-        const overlap = colours.filter((c) => sp.colours.includes(c));
-        if (overlap.length > 0) {
-          matchCount++;
+        const overlapCount = colours.filter((c) => sp.colours.includes(c)).length;
+        if (overlapCount > 0) {
+          weightedScore += WEIGHT_COLOUR * (overlapCount / colours.length);
         }
       }
     }
 
-    // Habitat match
+    // Habitat match (weight 1.5)
     if (habitat) {
-      totalCriteria++;
+      totalWeight += WEIGHT_HABITAT;
       if (sp.habitat && sp.habitat.includes(habitat)) {
-        matchCount++;
+        weightedScore += WEIGHT_HABITAT;
       }
     }
 
-    // Seasonality match
+    // Seasonality match (weight 1.5)
     if (seasonalSpeciesIds !== null) {
-      totalCriteria++;
+      totalWeight += WEIGHT_SEASON;
       if (seasonalSpeciesIds.has(sp.id)) {
-        matchCount++;
+        weightedScore += WEIGHT_SEASON;
       }
     }
-
-    // Species with missing enrichment data: don't penalize them
-    // Treat missing values as "no match" for that criterion (per spec)
-    // But still include them if they match other criteria
 
     // Must match at least 1 criterion (or have no criteria to match)
-    if (totalCriteria === 0 || matchCount > 0) {
-      // Calculate score: match ratio + confidence boost
-      const matchRatio = totalCriteria > 0 ? matchCount / totalCriteria : 0.5;
-      const confidenceBoost = sp.confidence ? sp.confidence * 0.1 : 0;
+    if (totalWeight === 0 || weightedScore > 0) {
+      const matchRatio = totalWeight > 0 ? weightedScore / totalWeight : 0.5;
+      // Reduced confidence boost (max 0.03 instead of 0.1) so it can't flip rankings
+      const confidenceBoost = sp.confidence ? sp.confidence * 0.03 : 0;
       const score = matchRatio + confidenceBoost;
+
+      // Count discrete matches for label thresholds
+      let matchCount = 0;
+      let totalCriteria = 0;
+      if (size) { totalCriteria++; if (sp.size_category === size) matchCount++; }
+      if (colours.length > 0) {
+        totalCriteria++;
+        if (sp.colours?.some((c) => colours.includes(c))) matchCount++;
+      }
+      if (habitat) { totalCriteria++; if (sp.habitat?.includes(habitat)) matchCount++; }
+      if (seasonalSpeciesIds !== null) { totalCriteria++; if (seasonalSpeciesIds.has(sp.id)) matchCount++; }
 
       let matchLabel: "Confirmed" | "Likely" | "Possible";
       if (matchCount === totalCriteria && totalCriteria >= 3) {
@@ -285,11 +300,19 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Sort by match score descending, then confidence
+  // Sort by match score descending
   scored.sort((a, b) => b.matchScore - a.matchScore);
 
   // Limit to top 50 results
   const results = scored.slice(0, 50);
+
+  // Debug: log scoring breakdown for top 10 results
+  console.log("--- Species ID Debug ---");
+  console.log("Filters:", { location, month, size, colours, habitat });
+  results.slice(0, 10).forEach((r, i) => {
+    const sp = allSpecies.find((s) => s.id === r.id);
+    console.log(`#${i + 1} ${r.name} | score=${r.matchScore.toFixed(3)} label=${r.matchLabel} | size=${r.size_category} colours=${JSON.stringify(r.colours)} habitat=${JSON.stringify(r.habitat)} confidence=${sp?.confidence} seasonal=${seasonalSpeciesIds ? seasonalSpeciesIds.has(r.id) : "n/a"}`);
+  });
 
   return NextResponse.json({ results, total: scored.length });
 }

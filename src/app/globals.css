@@ -59,7 +59,7 @@
      CARDS
      ======================================== */
   .card-lift {
-    @apply transition-all duration-300 ease-out;
+    @apply transition-[transform,box-shadow] duration-300 ease-out;
   }
   .card-lift:hover {
     @apply -translate-y-1.5;

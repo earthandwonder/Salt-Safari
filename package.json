@@ -9,7 +9,8 @@
     "lint": "next lint",
     "pipeline": "npx tsx --env-file=.env.local scripts/run-pipeline.ts",
     "validate": "npx tsx --env-file=.env.local scripts/validate-and-publish.ts",
-    "send-alerts": "npx tsx --env-file=.env.local scripts/send-alerts.ts"
+    "send-alerts": "npx tsx --env-file=.env.local scripts/send-alerts.ts",
+    "set-spottable": "npx tsx --env-file=.env.local scripts/set-spottable.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",
