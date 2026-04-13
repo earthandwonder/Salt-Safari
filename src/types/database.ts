@@ -158,6 +158,7 @@ export type Photo = {
 
 export type User = {
   id: string;
+  username: string | null;
   display_name: string | null;
   has_purchased_id: boolean;
   stripe_customer_id: string | null;

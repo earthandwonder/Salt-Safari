@@ -63,6 +63,7 @@ export default function Header() {
 
   const displayName =
     user?.user_metadata?.display_name || user?.email?.split("@")[0];
+  const username = user?.user_metadata?.username as string | undefined;
 
   return (
     <header
@@ -124,7 +125,16 @@ export default function Header() {
                   >
                     My Log
                   </Link>
-                  <span className="text-white/70 text-sm">{displayName}</span>
+                  {username ? (
+                    <Link
+                      href={`/u/${username}`}
+                      className="text-white/70 hover:text-white text-sm transition-colors"
+                    >
+                      {displayName}
+                    </Link>
+                  ) : (
+                    <span className="text-white/70 text-sm">{displayName}</span>
+                  )}
                   <button
                     onClick={handleSignOut}
                     className="text-white/50 hover:text-white text-sm transition-colors"

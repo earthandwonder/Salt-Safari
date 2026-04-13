@@ -587,3 +587,63 @@
 
 ### Build
 - `npm run build` passes clean. `/api/sightings` routes are 131 B each. `/log` page is 3.02 kB first load JS. Location page unchanged at 8.89 kB.
+
+---
+
+## Session 13 — User Profile + Trip Reports
+**Date:** 2026-04-13
+**Status:** Complete
+
+### What was built
+- **Database migration:** `supabase/migrations/20260412000000_add_username.sql`
+  - Added `username TEXT UNIQUE` column to `users` table with index.
+  - Public read policy on `users` table (replaces "own profile only" policy) — needed for `/u/[username]` pages.
+  - Public read policy on `sightings` table (replaces "own sightings only" policy) — needed for public trip reports and profiles.
+
+- **Updated TypeScript types:** `src/types/database.ts` — added `username: string | null` to `User` type.
+
+- **Updated signup form:** `src/app/signup/page.tsx`
+  - Added username field with live validation (3-30 chars, lowercase alphanumeric + hyphens).
+  - Auto-slugifies input. Shows `saltsafari.app/u/` prefix in the input.
+  - Checks username uniqueness against `users` table before signup.
+  - Stores username in both `auth.users` metadata and `users` table.
+
+- **Updated Header:** `src/components/Header.tsx`
+  - Display name now links to `/u/[username]` when user has a username set.
+
+- **User profile page:** `src/app/u/[username]/page.tsx` + `ProfilePageClient.tsx`
+  - Server Component fetches user by username, all sightings, batch-fetches species/locations/regions.
+  - Groups sightings into trips (same location + date).
+  - Computes unique species list sorted by charismatic first, then alphabetical.
+  - `generateMetadata()` with OG tags.
+  - Client Component: dark hero with avatar (initials), username, join date, stats row (species count, trip count).
+  - WaveDivider to sand content area.
+  - TabBar: "Trips" (reverse-chronological trip cards with overlapping circular thumbnail stacks, links to `/trips/[tripId]`) and "Spotted" (ResponsiveGrid of SpeciesCard with spotted checkmarks).
+  - Empty states for both tabs.
+
+- **Trip detail page:** `src/app/trips/[id]/page.tsx` + `TripPageClient.tsx`
+  - Trip ID format: `{userId}-{locationSlug}-{YYYY-MM-DD}` (deterministic, URL-safe).
+  - Server Component parses trip ID, fetches user, location, region, sightings, species, total species count at location.
+  - `generateMetadata()` with descriptive title and OG tags.
+  - Client Component: celebratory dark hero with animated species count badge, headline ("[Name] saw N species at [Location]"), date, animated progress bar (coral-to-teal gradient), CTA buttons (Discover Location + What did you see? + Share).
+  - Species grid: ResponsiveGrid of sighting cards with photos, quantity badges, note snippets. Motion staggered fade-in.
+  - Share button: mobile FAB (fixed bottom-right) + desktop inline. Uses `navigator.share()` with clipboard fallback. Toast notification on copy.
+  - Profile link when user has username.
+  - Faint photo mosaic background in hero for visual depth.
+
+- **OG image generation:** `src/app/trips/[id]/opengraph-image.tsx`
+  - Edge runtime. 1200x630 standard OG size.
+  - Deep navy gradient background with decorative accent circles.
+  - Salt Safari branding + date in top bar.
+  - Large species count numeral with coral-to-teal gradient.
+  - "[Name] at [Location]" headline.
+  - Progress bar showing species spotted vs total at location.
+  - Photo strip at bottom: up to 6 species photos in rounded tiles, "+N" overflow.
+
+### Deviations
+- Q10 (username format) had no answer — implemented option A (user-chosen) as recommended in the implementation prompt.
+- No 1080x1080 Instagram variant for OG image — the standard 1200x630 covers iMessage/WhatsApp/Twitter/Facebook which are the primary share targets. Instagram variant can be added later if needed.
+- `runtime = "edge"` on OG image route disables static generation for that route (expected, noted by Next.js build warning).
+
+### Build
+- `npm run build` passes clean. `/u/[username]` is 4.26 kB first load JS. `/trips/[id]` is 3.2 kB first load JS. OG image route is 135 B.

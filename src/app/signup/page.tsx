@@ -5,27 +5,71 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+const USERNAME_REGEX = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
+
+function slugifyUsername(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 30);
+}
+
 export default function SignUpPage() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  function handleUsernameChange(value: string) {
+    const slugged = slugifyUsername(value);
+    setUsername(slugged);
+    if (slugged.length > 0 && !USERNAME_REGEX.test(slugged)) {
+      setUsernameError("3-30 characters, lowercase letters, numbers, and hyphens only");
+    } else {
+      setUsernameError(null);
+    }
+  }
+
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    if (!USERNAME_REGEX.test(username)) {
+      setError("Please choose a valid username (3-30 chars, lowercase alphanumeric + hyphens)");
+      setLoading(false);
+      return;
+    }
+
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+
+    // Check username uniqueness
+    const { data: existing } = await supabase
+      .from("users")
+      .select("id")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (existing) {
+      setError("That username is already taken. Try another one.");
+      setLoading(false);
+      return;
+    }
+
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           display_name: displayName,
+          username: username,
         },
       },
     });
@@ -33,10 +77,19 @@ export default function SignUpPage() {
     if (error) {
       setError(error.message);
       setLoading(false);
-    } else {
-      setSuccess(true);
-      setLoading(false);
+      return;
     }
+
+    // Set username on the users table (the trigger creates the row)
+    if (data.user) {
+      await supabase
+        .from("users")
+        .update({ username })
+        .eq("id", data.user.id);
+    }
+
+    setSuccess(true);
+    setLoading(false);
   }
 
   async function handleGoogleSignUp() {
@@ -159,6 +212,34 @@ export default function SignUpPage() {
                 className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
                 placeholder="Your name"
               />
+            </div>
+
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                  saltsafari.app/u/
+                </span>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => handleUsernameChange(e.target.value)}
+                  required
+                  minLength={3}
+                  maxLength={30}
+                  className="w-full rounded-xl border border-slate-200 pl-[136px] pr-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
+                  placeholder="your-username"
+                />
+              </div>
+              {usernameError && (
+                <p className="text-xs text-amber-600 mt-1">{usernameError}</p>
+              )}
             </div>
 
             <div>
