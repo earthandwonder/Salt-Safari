@@ -1405,3 +1405,44 @@ FishBase parquet files are read as transient input only. The enrichment script r
 
 ### Deviations
 - None.
+
+---
+
+## Session 23 — Performance Audit & Initial Fixes
+**Date:** 2026-04-14
+**Status:** Complete (audit + first round of fixes)
+
+### What was built
+
+#### Performance fixes applied
+Four targeted fixes for the slowest pages (all verified with `npm run build`):
+
+1. **Location site page deduplication** — `src/app/locations/[region]/[site]/page.tsx`
+   - Wrapped `getLocationData` in `React.cache()` to deduplicate the double call from `generateMetadata` + page render.
+   - Parallelized seasonality batch queries with `Promise.all` (was sequential for loop).
+   - Parallelized nearby location count queries with `Promise.all` (was N+1 sequential).
+
+2. **Species browse ISR** — `src/app/species/page.tsx`
+   - Added `export const revalidate = 3600` for 1-hour ISR caching.
+
+3. **Species identify API overhaul** — `src/app/api/species/identify/route.ts`
+   - Consolidated 3 separate location lookups into 1.
+   - Consolidated 3 separate `location_species` fetches into 1 (selecting `id, species_id, confidence`).
+   - Parallelized seasonality and species batch queries with `Promise.all`.
+   - Built confidence map from already-fetched data instead of extra queries.
+
+4. **Bottom nav profile race condition** — `src/components/BottomNav.tsx`
+   - Added `authLoaded` state. Profile link is `#` (no-op) until auth resolves, preventing premature redirect to `/login`.
+
+#### Performance audit document
+- Created `docs/25-performance-audit.md` — comprehensive site-wide performance audit with 12 prioritized tasks (P0–P2), each with file references, problem description, and fix outline. Next session should work through this document.
+
+### Files changed
+- `src/app/locations/[region]/[site]/page.tsx` — `React.cache()`, parallel batches
+- `src/app/species/page.tsx` — added `revalidate`
+- `src/app/api/species/identify/route.ts` — major query consolidation
+- `src/components/BottomNav.tsx` — `authLoaded` race condition fix
+- `docs/25-performance-audit.md` — **new**
+
+### Deviations
+- None.

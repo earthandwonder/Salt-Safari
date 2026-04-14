@@ -57,7 +57,7 @@ export default function BottomNav() {
   const profileHref = username
     ? `/u/${username}`
     : authLoaded
-      ? "/login?redirectTo=%2Fu"
+      ? "/login?redirectTo=%2Flog"
       : "#";
 
   const navItems: NavItem[] = [
