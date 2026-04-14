@@ -33,109 +33,83 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
 
-  // Build the base species query
-  // If a location is selected, filter to species at that location
-  let speciesIds: string[] | null = null;
-
+  // Look up location once (reused for species IDs, seasonality, and confidence)
+  let locationId: string | null = null;
   if (location) {
-    // First get the location ID from slug
     const { data: loc } = await supabase
       .from("locations")
       .select("id")
       .eq("slug", location)
       .eq("published", true)
       .single();
+    locationId = loc?.id ?? null;
+  }
 
-    if (loc) {
-      // Get all species IDs at this location
-      const allSpeciesIds: string[] = [];
-      let from = 0;
-      const batchSize = 1000;
-      let hasMore = true;
+  // Fetch location_species rows once (reused for species IDs, seasonality, and confidence)
+  type LocSpeciesRow = { id: string; species_id: string; confidence: number | null };
+  let locationSpeciesRows: LocSpeciesRow[] = [];
 
-      while (hasMore) {
-        const { data: locSpecies } = await supabase
-          .from("location_species")
-          .select("species_id")
-          .eq("location_id", loc.id)
-          .range(from, from + batchSize - 1);
-
-        if (locSpecies && locSpecies.length > 0) {
-          allSpeciesIds.push(...locSpecies.map((ls) => ls.species_id));
-          hasMore = locSpecies.length === batchSize;
-          from += batchSize;
-        } else {
-          hasMore = false;
-        }
+  if (locationId) {
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+    while (hasMore) {
+      const { data } = await supabase
+        .from("location_species")
+        .select("id, species_id, confidence")
+        .eq("location_id", locationId)
+        .range(from, from + batchSize - 1);
+      if (data && data.length > 0) {
+        locationSpeciesRows.push(...data);
+        hasMore = data.length === batchSize;
+        from += batchSize;
+      } else {
+        hasMore = false;
       }
-      speciesIds = allSpeciesIds;
     }
   }
 
-  // If month filter is set AND a location is provided, get species active that month
+  const speciesIds: string[] | null = locationId
+    ? locationSpeciesRows.map((ls) => ls.species_id)
+    : null;
+
+  // Seasonality: check which species are active in the given month
   let seasonalSpeciesIds: Set<string> | null = null;
 
-  if (month !== null && month >= 0 && month <= 11 && location) {
-    // Get the location first
-    const { data: loc } = await supabase
-      .from("locations")
-      .select("id")
-      .eq("slug", location)
-      .eq("published", true)
-      .single();
+  if (month !== null && month >= 0 && month <= 11 && locationId && locationSpeciesRows.length > 0) {
+    const dbMonth = month + 1;
+    const lsIdToSpeciesId = new Map(locationSpeciesRows.map((ls) => [ls.id, ls.species_id]));
+    const lsIdList = locationSpeciesRows.map((ls) => ls.id);
+    seasonalSpeciesIds = new Set<string>();
 
-    if (loc) {
-      // Seasonality month is 1-12, input month is 0-11
-      const dbMonth = month + 1;
+    // Parallel batch queries for seasonality
+    const seasonBatches: string[][] = [];
+    for (let i = 0; i < lsIdList.length; i += 200) {
+      seasonBatches.push(lsIdList.slice(i, i + 200));
+    }
 
-      // Get location_species IDs for this location
-      const lsIds: string[] = [];
-      let from = 0;
-      const batchSize = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        const { data: ls } = await supabase
-          .from("location_species")
-          .select("id, species_id")
-          .eq("location_id", loc.id)
-          .range(from, from + batchSize - 1);
-
-        if (ls && ls.length > 0) {
-          lsIds.push(...ls.map((l) => `${l.id}|${l.species_id}`));
-          hasMore = ls.length === batchSize;
-          from += batchSize;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      // Batch query seasonality
-      const lsIdList = lsIds.map((l) => l.split("|")[0]);
-      seasonalSpeciesIds = new Set<string>();
-
-      for (let i = 0; i < lsIdList.length; i += 200) {
-        const batch = lsIdList.slice(i, i + 200);
-        const { data: seasonality } = await supabase
+    const seasonResults = await Promise.all(
+      seasonBatches.map((batch) =>
+        supabase
           .from("species_seasonality")
           .select("location_species_id, likelihood")
           .in("location_species_id", batch)
           .eq("month", dbMonth)
-          .in("likelihood", ["common", "occasional"]);
+          .in("likelihood", ["common", "occasional"])
+      )
+    );
 
-        if (seasonality) {
-          for (const s of seasonality) {
-            const match = lsIds.find((l) => l.startsWith(s.location_species_id));
-            if (match) {
-              seasonalSpeciesIds.add(match.split("|")[1]);
-            }
-          }
+    for (const { data: seasonality } of seasonResults) {
+      if (seasonality) {
+        for (const s of seasonality) {
+          const speciesId = lsIdToSpeciesId.get(s.location_species_id);
+          if (speciesId) seasonalSpeciesIds.add(speciesId);
         }
       }
     }
   }
 
-  // Now fetch all published species (or filtered set)
+  // Fetch species records
   const allSpecies: Array<{
     id: string;
     slug: string;
@@ -149,44 +123,29 @@ export async function GET(request: NextRequest) {
     confidence: number | null;
   }> = [];
 
-  // If we have speciesIds from location filter, use them; otherwise fetch all published
   if (speciesIds !== null) {
-    // Batch fetch species by IDs
+    // Parallel batch fetch species by IDs
+    const speciesBatches: string[][] = [];
     for (let i = 0; i < speciesIds.length; i += 200) {
-      const batch = speciesIds.slice(i, i + 200);
-      const { data } = await supabase
-        .from("species")
-        .select("id, slug, name, scientific_name, hero_image_url, size_category, colours, habitat, depth_zone")
-        .in("id", batch)
-        .eq("published", true);
-
-      if (data) allSpecies.push(...data.map((d) => ({ ...d, confidence: null })));
+      speciesBatches.push(speciesIds.slice(i, i + 200));
     }
 
-    // Get confidence scores from location_species
-    if (speciesIds.length > 0) {
-      const { data: loc } = await supabase
-        .from("locations")
-        .select("id")
-        .eq("slug", location!)
-        .single();
+    const speciesResults = await Promise.all(
+      speciesBatches.map((batch) =>
+        supabase
+          .from("species")
+          .select("id, slug, name, scientific_name, hero_image_url, size_category, colours, habitat, depth_zone")
+          .in("id", batch)
+          .eq("published", true)
+      )
+    );
 
-      if (loc) {
-        for (let i = 0; i < speciesIds.length; i += 200) {
-          const batch = speciesIds.slice(i, i + 200);
-          const { data: ls } = await supabase
-            .from("location_species")
-            .select("species_id, confidence")
-            .eq("location_id", loc.id)
-            .in("species_id", batch);
+    // Build confidence map from the already-fetched locationSpeciesRows
+    const confidenceMap = new Map(locationSpeciesRows.map((ls) => [ls.species_id, ls.confidence]));
 
-          if (ls) {
-            for (const l of ls) {
-              const sp = allSpecies.find((s) => s.id === l.species_id);
-              if (sp) sp.confidence = l.confidence;
-            }
-          }
-        }
+    for (const { data } of speciesResults) {
+      if (data) {
+        allSpecies.push(...data.map((d) => ({ ...d, confidence: confidenceMap.get(d.id) ?? null })));
       }
     }
   } else {

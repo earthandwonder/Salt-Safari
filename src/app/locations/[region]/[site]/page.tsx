@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
@@ -32,7 +33,7 @@ type NearbyLocation = {
 };
 
 // ─── Data fetching ───────────────────────────────────────────────
-async function getLocationData(regionSlug: string, siteSlug: string) {
+const getLocationData = cache(async function getLocationData(regionSlug: string, siteSlug: string) {
   const supabase = await createClient();
   const currentMonth = new Date().getMonth() + 1; // 1-12
 
@@ -82,18 +83,25 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
     }
   }
 
-  // 4. Fetch all seasonality data for this location's species
+  // 4. Fetch all seasonality data for this location's species (parallel batches)
   const locationSpeciesIds = allLocationSpecies.map((ls) => ls.id);
   const seasonalityMap = new Map<string, SpeciesSeasonality[]>();
 
-  // Batch in groups of 200 (Supabase .in() limit)
+  const seasonalityBatches: string[][] = [];
   for (let i = 0; i < locationSpeciesIds.length; i += 200) {
-    const batch = locationSpeciesIds.slice(i, i + 200);
-    const { data: seasonality } = await supabase
-      .from("species_seasonality")
-      .select("*")
-      .in("location_species_id", batch);
+    seasonalityBatches.push(locationSpeciesIds.slice(i, i + 200));
+  }
 
+  const seasonalityResults = await Promise.all(
+    seasonalityBatches.map((batch) =>
+      supabase
+        .from("species_seasonality")
+        .select("*")
+        .in("location_species_id", batch)
+    )
+  );
+
+  for (const { data: seasonality } of seasonalityResults) {
     if (seasonality) {
       for (const s of seasonality) {
         const existing = seasonalityMap.get(s.location_species_id) ?? [];
@@ -181,17 +189,20 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
 
   const nearbyLocations: NearbyLocation[] = [];
   if (nearbyRaw && nearbyRaw.length > 0) {
-    // Get species counts for nearby locations
-    for (const nl of nearbyRaw) {
-      const { count } = await supabase
+    // Get species counts for all nearby locations in parallel
+    const countPromises = nearbyRaw.map((nl) =>
+      supabase
         .from("location_species")
         .select("id", { count: "exact", head: true })
-        .eq("location_id", nl.id);
+        .eq("location_id", nl.id)
+    );
+    const countResults = await Promise.all(countPromises);
 
+    for (let i = 0; i < nearbyRaw.length; i++) {
       nearbyLocations.push({
-        ...nl,
-        speciesCount: count ?? 0,
-        inSeasonCount: 0, // Simplified — would need full seasonality query per location
+        ...nearbyRaw[i],
+        speciesCount: countResults[i].count ?? 0,
+        inSeasonCount: 0,
       } as NearbyLocation);
     }
   }
@@ -209,7 +220,7 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
     spottableCount: spottableList.length,
     inSeasonCount: speciesList.filter((s) => s.isInSeason).length,
   };
-}
+});
 
 // ─── SEO ─────────────────────────────────────────────────────────
 type PageProps = { params: Promise<{ region: string; site: string }> };

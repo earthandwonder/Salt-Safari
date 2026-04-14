@@ -4,6 +4,8 @@ import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SpeciesBrowseClient } from "./SpeciesBrowseClient";
 
+export const revalidate = 3600; // revalidate every hour
+
 export const metadata: Metadata = {
   title: "All Species",
   description:

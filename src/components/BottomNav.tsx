@@ -15,6 +15,7 @@ type NavItem = {
 export default function BottomNav() {
   const pathname = usePathname();
   const [username, setUsername] = useState<string | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -31,6 +32,7 @@ export default function BottomNav() {
           .single();
         setUsername(data?.username ?? null);
       }
+      setAuthLoaded(true);
     }
 
     loadUser();
@@ -51,7 +53,12 @@ export default function BottomNav() {
     return null;
   }
 
-  const profileHref = username ? `/u/${username}` : "/login?redirectTo=%2Flog";
+  // Don't link to login until we've confirmed the user isn't signed in
+  const profileHref = username
+    ? `/u/${username}`
+    : authLoaded
+      ? "/login?redirectTo=%2Fu"
+      : "#";
 
   const navItems: NavItem[] = [
     {
