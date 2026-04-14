@@ -650,11 +650,11 @@ export function HomePageClient({
 
       {/* ──────────────────────────────────────────
           COMMUNITY — Who's been swimming?
-          ────────────────────────────────────────── */}
+          Commented out until we have more users
+          ──────────────────────────────────────────
       <section className="bg-sand section-padding overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-            {/* Text */}
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse-soft" />
@@ -691,14 +691,12 @@ export function HomePageClient({
               </Link>
             </div>
 
-            {/* Visual card — recent swimmer activity feed */}
             <div className="relative">
               <Link
                 href="/locations/sydney/cabbage-tree-bay/community"
                 className="block group"
               >
                 <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden card-lift">
-                  {/* Card header */}
                   <div className="bg-deep px-6 py-5">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-teal-300 text-xs font-medium tracking-wider uppercase">
@@ -714,7 +712,6 @@ export function HomePageClient({
                     </p>
                   </div>
 
-                  {/* Simulated activity feed */}
                   <div className="divide-y divide-slate-100">
                     {[
                       { initials: "KM", name: "Kate M.", species: 12, time: "Today", color: "bg-teal-500" },
@@ -741,7 +738,6 @@ export function HomePageClient({
                     ))}
                   </div>
 
-                  {/* Footer */}
                   <div className="flex items-center justify-between px-5 py-3.5 bg-slate-50/80">
                     <p className="text-sm text-slate-500">
                       See all community activity
@@ -766,6 +762,7 @@ export function HomePageClient({
           </div>
         </div>
       </section>
+      */}
 
       {/* ──────────────────────────────────────────
           THE RESERVE — Know Before You Go
