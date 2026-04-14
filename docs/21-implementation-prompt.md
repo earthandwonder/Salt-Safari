@@ -1079,7 +1079,7 @@ Goal: Now that the feature set is complete for Cabbage Tree Bay, expand to all S
 
 ---
 
-### Session 22: Admin Dashboard
+### Session 22a: Admin Dashboard
 
 **Goal:** Protected admin interface for managing content and triggering pipeline runs.
 
@@ -1094,7 +1094,7 @@ Goal: Now that the feature set is complete for Cabbage Tree Bay, expand to all S
 2. **Admin pages:**
    - `/admin` — overview stats: content counts by `data_quality` and status. "Needs attention" list (species with `worms_aphia_id = NULL`, locations with `data_quality = 'stub'`).
    - `/admin/locations` — table of all locations (including unpublished). Columns: name, region, data_quality, description_status, published, species count, last_synced_at. Bulk actions: publish/unpublish.
-   - `/admin/species` — table of all species. Columns: name, scientific_name, deep_dive_status, data_quality, worms_aphia_id, photo count. Actions: edit, publish/unpublish.
+   - `/admin/species` — table of all species. Columns: name, scientific_name, deep_dive_status, data_quality, worms_aphia_id, photo count. Actions: edit, publish/unpublish, **"Curate photos"** button linking to `/admin/species/[id]/curate-photos` (built in Session 22b).
    - `/admin/photos` — grid view of all photos. Filter by location, species, license, is_hero. Actions: edit attribution, set/unset hero.
    - `/admin/pipeline` — per-location pipeline status. Last sync date, species count, error status. "Run pipeline" button per location. "Run all" button.
 
@@ -1110,7 +1110,132 @@ Goal: Now that the feature set is complete for Cabbage Tree Bay, expand to all S
 - The admin dashboard doesn't need to be beautiful. Functional tables with sort/filter/actions are sufficient.
 - Use the `/design` skill for basic layout but don't over-invest — this is internal tooling.
 - The pipeline run buttons should show progress (at minimum: "Running...", "Complete", "Error").
+- The "Curate photos" button on `/admin/species` should link to `/admin/species/[id]/curate-photos` — this page will be built in Session 22b. For now, the link can exist but the destination page doesn't need to be functional.
 - To make yourself an admin: directly update your user row in the database: `UPDATE users SET is_admin = TRUE WHERE id = '{your-user-id}'`.
+
+---
+
+### Session 22b: Photo Curation Tool
+
+**Goal:** An admin tool to manually curate species photos — search Wikimedia Commons and iNaturalist for candidates, preview them, and hand-pick replacements for bad auto-selected images.
+
+**Depends on:** Session 22a (admin layout, middleware, species table with "Curate photos" button).
+
+**Read first:** Existing photo pipeline code in `src/lib/pipeline/photos/` — specifically `wikimedia.ts`, `inaturalist.ts`, and `r2.ts`. The curation tool reuses these modules.
+
+**Steps:**
+
+1. **Photo Curation Page** — `/admin/species/[id]/curate-photos` (where `[id]` is the species UUID)
+
+   **Why this exists:** The automated photo pipeline often selects bad images — fishing photos, meal/food photos, and illustrations regularly slip through the Wikimedia/iNat filters. This tool lets the admin manually review candidates from both sources and hand-pick the best ones.
+
+   **`"use client"` page.** This page is interactive (selection state, search, save). Use the browser Supabase client (`src/lib/supabase/client.ts`).
+
+   **Data loading:** On mount, fetch the species row (name, scientific_name, common_name, inat_taxon_id, hero_image_url) and its associated photos from the `photos` table (where `species_id = [id]`). Also fetch one associated location's lat/lng/radius_km from `location_species` → `locations` (pick the first — needed for iNat geo search). If the species has no associated location, iNat search will be skipped (Wikimedia-only mode — see step 2).
+
+   **Page layout (two sections):**
+
+   **Top: "Current Photos" section**
+   - Shows the species' existing photos (up to 3: 1 hero + 2 gallery). Each displays the image, source badge (Wikimedia/iNat), photographer credit, and license.
+   - Each photo has a **"Remove"** toggle (checkbox or X button). Toggling marks it for deletion — visual indicator (red border, dimmed, strikethrough) shows it's marked.
+   - The hero photo is labelled with a star/crown icon. If the hero is marked for removal, the first remaining (non-removed) gallery photo is auto-promoted to hero (indicated visually). If all existing photos are removed, the UI shows "Select a new hero from candidates below".
+   - The admin can remove 0, 1, 2, or all 3 existing photos.
+   - If the species has 0 existing photos, this section shows an empty state: "No photos yet — search below to add some." All 3 slots are available for candidates.
+
+   **Bottom: "Search Candidates" section**
+   - **Search bar:** Pre-filled with the species' `scientific_name`. Editable. A **"Search"** button triggers a fresh search. If the species has a `common_name`, show it as a clickable chip below the search bar that replaces the search text when clicked.
+   - On page load (and on each search), calls `POST /api/admin/photos/search` (step 2) and returns up to **20 candidate images: 10 from Wikimedia Commons + 10 from iNaturalist** (or up to 20 from Wikimedia if iNat is unavailable — see step 2).
+   - Show a loading spinner while the search is in progress (~2-3 seconds).
+   - Results displayed as a grid of thumbnail cards. Each card shows:
+     - The image (thumbnail, ~200×150px minimum, clickable to open full-size in a new tab via the source URL)
+     - Source badge: "Wikimedia" (blue) or "iNaturalist" (green)
+     - Photographer name
+     - License (e.g. "CC BY 4.0")
+     - A **"Select"** button/checkbox
+   - The admin clicks to select candidates. **Selection rules:**
+     - Can select up to `(3 − kept existing photos)` candidates. e.g. if 1 existing photo is kept, can select up to 2 new ones. If all 3 existing are kept (none removed), selection is disabled with a message "Remove an existing photo to free a slot".
+     - The UI shows the count: "Selected 1 of 2 available slots".
+     - **Hero assignment:** If the existing hero was removed (and no gallery photo was auto-promoted), the first selected candidate becomes the new hero (indicated visually with a star/crown icon). The admin can click the star on a different selected candidate to reassign hero. If the existing hero is still kept, new selections are gallery photos.
+   - If re-searching with different terms, **clear previous candidates** but **preserve the selection state of current photos** (top section) and any already-selected candidates that also appear in the new results.
+
+   **Save action:**
+   - A prominent **"Save Changes"** button at the bottom. Disabled until the admin has made at least one change (a removal or a selection).
+   - **Validation before save:**
+     - The species must end up with at least 1 photo. If all existing are removed and 0 candidates selected, show an error: "Species must have at least one photo."
+     - Exactly one photo must be hero. The UI should enforce this automatically via the auto-promotion and first-selected logic above — but validate before save as a safety net.
+   - **On save (immediate, not queued):**
+     1. Show a full-page loading overlay with per-step progress: "Removing old photos... (1/2)", "Uploading new photos... (1/2)", "Updating hero image...".
+     2. Call `POST /api/admin/photos/curate` (step 3) with the full changeset.
+     3. On success: redirect back to `/admin/species` with a success toast ("Photos updated for [species name]").
+     4. On partial failure: show which uploads failed, keep successful ones, allow retry of failed ones.
+
+   **Edge case — species has no photos and admin saves with 0 selections:** Blocked by validation. The "Save" button remains disabled.
+
+2. **Photo Curation Search API** — `POST /api/admin/photos/search`
+   - File: `src/app/api/admin/photos/search/route.ts`
+   - Body: `{ scientificName: string, commonName?: string, inatTaxonId?: number, lat?: number, lng?: number, radiusKm?: number }`
+   - Admin only: check `is_admin` via Supabase server client. Return 403 if not admin.
+   - **Search logic:**
+     - **Always** call `searchWikimediaPhotos(scientificName, commonName, 10)` from `src/lib/pipeline/photos/wikimedia.ts` (pass `maxResults=10`, overriding the default of 5).
+     - **If `inatTaxonId` AND `lat`/`lng`/`radiusKm` are all provided:** also call `searchINatPhotos(inatTaxonId, lat, lng, radiusKm, 10)` from `src/lib/pipeline/photos/inaturalist.ts` (pass `maxResults=10`).
+     - **If `inatTaxonId` or geo params are missing:** skip iNat search. Return up to 20 from Wikimedia instead (pass `maxResults=20`).
+     - Run both searches **in parallel** (`Promise.all`).
+   - **If the admin edits the search bar and searches a custom term:** the client sends the custom term as `scientificName`. This may not match a real taxon — that's fine, Wikimedia searches by text. iNat search uses `inatTaxonId` (unchanged from the species row), so it still works correctly.
+   - Returns: `{ wikimedia: WikimediaPhoto[], inaturalist: INatPhoto[], errors: string[] }`. The client renders both arrays with source labels.
+   - **API budget:** 2 API calls total per search (1 Wikimedia + 1 iNat). Wikimedia limit: 50K req/hour. iNat limit: 60 req/min. Even with aggressive re-searching, this is negligible.
+
+3. **Photo Curation Save API** — `POST /api/admin/photos/curate`
+   - File: `src/app/api/admin/photos/curate/route.ts`
+   - Body:
+     ```typescript
+     {
+       speciesId: string,                    // UUID
+       remove: string[],                     // photo UUIDs to delete
+       add: Array<{
+         url: string,                        // direct image URL to download from source
+         source: 'wikimedia' | 'inaturalist',
+         photographer: string,
+         license: string,                    // e.g. "CC BY 4.0"
+         licenseUrl: string,
+         sourceUrl: string,                  // canonical page on source platform
+         width: number | null,
+         height: number | null,
+       }>,
+       heroId: string | null,               // UUID of existing photo to keep as hero (null if hero is a new addition)
+       newHeroIndex: number | null,          // index in `add` array for the new hero (null if keeping existing hero)
+     }
+     ```
+   - Admin only: check `is_admin`. Return 403 if not.
+   - **Execution order:**
+     1. **Remove:** For each photo UUID in `remove`:
+        - Fetch the photo row to get its `url` (R2 public URL).
+        - Derive the R2 storage key from the URL: strip the `R2_PUBLIC_URL` prefix. e.g. `https://cdn.example.com/weedy-seadragon/hero.jpg` → `weedy-seadragon/hero.jpg`.
+        - Call `deleteFromR2(storageKey)` (new function — see step 3a).
+        - Delete the photo row from the `photos` table.
+     2. **Add:** For each candidate in `add`:
+        - Download the image from `url` (fetch the bytes).
+        - Determine storage path: `{species-slug}/curated-{timestamp}-{index}.jpg` (use species slug from the species row + timestamp to avoid collisions with pipeline-generated photos).
+        - Call `uploadToR2(storagePath, imageBuffer, contentType)` from `src/lib/pipeline/photos/r2.ts`.
+        - Insert a `photos` row: `species_id`, `url` (R2 public URL), `photographer_name`, `license`, `license_url`, `source`, `source_url`, `date_accessed` (today), `is_hero = false` (set later), `width`, `height`.
+     3. **Hero assignment:**
+        - Set `is_hero = false` on ALL photos for this species.
+        - If `heroId` is set: `UPDATE photos SET is_hero = true WHERE id = heroId`.
+        - If `newHeroIndex` is set: set `is_hero = true` on the newly inserted photo at that index.
+        - Update `species.hero_image_url` to the hero photo's R2 URL.
+     4. Return: `{ success: true, photos: Photo[] }` (the updated photo list for this species).
+
+   3a. **Add `deleteFromR2()` to `src/lib/pipeline/photos/r2.ts`:**
+       - This function does not exist yet. Add it alongside the existing `uploadToR2()`.
+       - Uses `DeleteObjectCommand` from `@aws-sdk/client-s3` (already a dependency via the upload function).
+       - Signature: `export async function deleteFromR2(storageKey: string): Promise<void>`
+       - Reuse the same S3Client instance that `uploadToR2` uses.
+
+**Guidance:**
+- **Invest in the image grid UX** — this is a visual comparison tool, not a CRUD table. Thumbnails should be large enough to judge photo quality at a glance (~200×150px minimum).
+- The curation page should show the species name + scientific name prominently at the top so the admin can verify they're looking at the right species.
+- Use the `/design` skill for the curation page layout — it should be clean and functional with clear visual separation between current photos and candidates.
+- The existing photo pipeline functions (`searchWikimediaPhotos`, `searchINatPhotos`, `uploadToR2`) are already tested and working. Reuse them directly — do not rewrite search or upload logic.
+- Test with a species you know has bad photos. Verify the full flow: search → preview → select → save → verify R2 upload → verify DB update → verify hero_image_url updated.
 
 ---
 

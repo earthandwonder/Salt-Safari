@@ -11,19 +11,18 @@ export function Footer() {
               <svg
                 width="28"
                 height="28"
-                viewBox="0 0 32 32"
+                viewBox="0 0 28 28"
                 fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-teal-400"
+                className="text-teal-400 group-hover:text-teal-300 transition-colors"
               >
                 <path
-                  d="M2 20C6 16 10 24 16 20C22 16 26 24 30 20"
+                  d="M4 18c2-3 4-5 7-5s5 4 7 4 4-2 6-4"
                   stroke="currentColor"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                 />
                 <path
-                  d="M2 14C6 10 10 18 16 14C22 10 26 18 30 14"
+                  d="M4 12c2-3 4-5 7-5s5 4 7 4 4-2 6-4"
                   stroke="currentColor"
                   strokeWidth="2.5"
                   strokeLinecap="round"

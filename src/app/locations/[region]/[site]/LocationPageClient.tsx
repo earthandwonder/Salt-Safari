@@ -378,10 +378,10 @@ export function LocationPageClient({
 
       <Footer />
 
-      {/* Floating "Log a Sighting" button — always visible, redirects to login if not authenticated */}
+      {/* Floating "Log a Sighting" button — commented out, using bottom nav Spot button instead
       <button
         onClick={() => handleOpenSightingModal()}
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-coral hover:bg-coral-dark text-white font-semibold text-sm shadow-lg shadow-coral/30 transition-all hover:scale-105"
+        className="fixed bottom-28 right-4 md:bottom-6 md:right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-coral hover:bg-coral-dark text-white font-semibold text-sm shadow-lg shadow-coral/30 transition-all hover:scale-105"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -389,6 +389,7 @@ export function LocationPageClient({
         </svg>
         Log Sighting
       </button>
+      */}
 
       {/* Log Sighting Modal */}
       <LogSightingModal

@@ -52,7 +52,7 @@ export function SpeciesPageClient({
   const defaultTab = hasMultiplePhotos ? "photos" : "about";
 
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const [lightboxPhoto, setLightboxPhoto] = useState<Photo | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState(-1);
 
   const tabs = hasMultiplePhotos
     ? [
@@ -183,7 +183,7 @@ export function SpeciesPageClient({
           {/* Photos Tab */}
           {hasMultiplePhotos && (
             <TabPanel tabId="photos" activeTab={activeTab}>
-              <PhotosTab photos={photos} onPhotoClick={setLightboxPhoto} />
+              <PhotosTab photos={photos} onPhotoClick={(index) => setLightboxIndex(index)} />
             </TabPanel>
           )}
 
@@ -231,7 +231,12 @@ export function SpeciesPageClient({
       <Footer />
 
       {/* Lightbox */}
-      <PhotoLightbox photo={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />
+      <PhotoLightbox
+        photos={photos}
+        currentIndex={lightboxIndex}
+        onClose={() => setLightboxIndex(-1)}
+        onNavigate={setLightboxIndex}
+      />
     </div>
   );
 }

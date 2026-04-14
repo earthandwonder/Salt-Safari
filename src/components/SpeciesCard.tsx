@@ -39,6 +39,8 @@ export function SpeciesCard({
   return (
     <Link
       href={`/species/${slug}`}
+      target="_blank"
+      rel="noopener noreferrer"
       className={`group block card-lift rounded-xl overflow-hidden bg-white shadow-sm border border-slate-100 touch-action-manipulation ${className}`}
     >
       {/* Photo — 4:3 aspect ratio */}

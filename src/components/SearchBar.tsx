@@ -133,7 +133,7 @@ export function SearchBar() {
       {/* Search input */}
       <div className="relative">
         <svg
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none"
           width="15"
           height="15"
           viewBox="0 0 24 24"
@@ -156,7 +156,7 @@ export function SearchBar() {
             if (results.length > 0 && query.trim().length >= 2) setOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-white/15 bg-white/8 text-white text-sm placeholder:text-white/35 focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-400/40 focus:bg-white/12 backdrop-blur-sm transition-all"
+          className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-white/20 bg-white/10 text-white text-sm placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-400/40 focus:bg-white/15 backdrop-blur-sm transition-all"
           role="combobox"
           aria-expanded={open}
           aria-haspopup="listbox"

@@ -6,16 +6,16 @@ import type { Photo } from "@/types";
 
 interface PhotosTabProps {
   photos: Photo[];
-  onPhotoClick: (photo: Photo) => void;
+  onPhotoClick: (index: number) => void;
 }
 
 export function PhotosTab({ photos, onPhotoClick }: PhotosTabProps) {
   return (
     <ResponsiveGrid columns={{ mobile: 2, tablet: 3, desktop: 4 }}>
-      {photos.map((photo) => (
+      {photos.map((photo, index) => (
         <button
           key={photo.id}
-          onClick={() => onPhotoClick(photo)}
+          onClick={() => onPhotoClick(index)}
           className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-slate-100 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-coral focus-visible:ring-offset-2"
         >
           <Image

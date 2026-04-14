@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import type { Photo } from "@/types";
 
 interface PhotoLightboxProps {
-  photo: Photo | null;
+  photos: Photo[];
+  currentIndex: number;
   onClose: () => void;
+  onNavigate: (index: number) => void;
 }
 
 const licenseLabels: Record<string, string> = {
@@ -19,12 +21,34 @@ const licenseLabels: Record<string, string> = {
   all_rights_granted: "Used with permission",
 };
 
-export function PhotoLightbox({ photo, onClose }: PhotoLightboxProps) {
+export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: PhotoLightboxProps) {
+  const photo = photos[currentIndex] ?? null;
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < photos.length - 1;
+  const touchStartX = useRef<number | null>(null);
+  const [direction, setDirection] = useState(0);
+
+  const goPrev = useCallback(() => {
+    if (hasPrev) {
+      setDirection(-1);
+      onNavigate(currentIndex - 1);
+    }
+  }, [hasPrev, currentIndex, onNavigate]);
+
+  const goNext = useCallback(() => {
+    if (hasNext) {
+      setDirection(1);
+      onNavigate(currentIndex + 1);
+    }
+  }, [hasNext, currentIndex, onNavigate]);
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") goPrev();
+      if (e.key === "ArrowRight") goNext();
     },
-    [onClose],
+    [onClose, goPrev, goNext],
   );
 
   useEffect(() => {
@@ -36,6 +60,20 @@ export function PhotoLightbox({ photo, onClose }: PhotoLightboxProps) {
       document.body.style.overflow = "";
     };
   }, [photo, handleKeyDown]);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(dx) > 50) {
+      if (dx > 0) goPrev();
+      else goNext();
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -59,6 +97,8 @@ export function PhotoLightbox({ photo, onClose }: PhotoLightboxProps) {
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="relative max-w-5xl w-full max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
             {/* Close button */}
             <button
@@ -82,15 +122,59 @@ export function PhotoLightbox({ photo, onClose }: PhotoLightboxProps) {
               </svg>
             </button>
 
-            {/* Image */}
+            {/* Counter */}
+            {photos.length > 1 && (
+              <span className="absolute -top-12 left-0 text-white/50 text-sm">
+                {currentIndex + 1} / {photos.length}
+              </span>
+            )}
+
+            {/* Image with navigation */}
             <div className="relative w-full rounded-lg overflow-hidden" style={{ height: "75vh" }}>
-              <Image
-                src={photo.url}
-                alt={photo.alt_text ?? "Species photo"}
-                fill
-                sizes="(max-width: 1024px) 100vw, 80vw"
-                className="object-contain"
-              />
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={photo.id}
+                  initial={{ opacity: 0, x: direction * 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: direction * -40 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={photo.url}
+                    alt={photo.alt_text ?? "Species photo"}
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 80vw"
+                    className="object-contain"
+                  />
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Prev button */}
+              {hasPrev && (
+                <button
+                  onClick={goPrev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white transition-colors"
+                  aria-label="Previous photo"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Next button */}
+              {hasNext && (
+                <button
+                  onClick={goNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white transition-colors"
+                  aria-label="Next photo"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 6 15 12 9 18" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Attribution bar */}

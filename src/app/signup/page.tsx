@@ -156,7 +156,28 @@ function SignUpForm() {
     <div className="min-h-screen bg-sand flex items-center justify-center px-4 sm:px-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-6">
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 28 28"
+              fill="none"
+              className="text-teal-500"
+            >
+              <path
+                d="M4 18c2-3 4-5 7-5s5 4 7 4 4-2 6-4"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M4 12c2-3 4-5 7-5s5 4 7 4 4-2 6-4"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                opacity="0.5"
+              />
+            </svg>
             <span className="font-display text-3xl font-semibold text-deep">
               Salt Safari
             </span>

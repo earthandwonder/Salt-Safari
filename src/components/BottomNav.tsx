@@ -165,8 +165,8 @@ export default function BottomNav() {
                 >
                   <div className="relative">
                     {/* Glow behind FAB */}
-                    <div className="absolute inset-0 rounded-full bg-coral/30 blur-lg scale-125" />
-                    <div className="relative w-12 h-12 rounded-full bg-coral flex items-center justify-center shadow-lg shadow-coral/25 group-active:scale-95 transition-transform">
+                    <div className="absolute inset-0 rounded-full bg-emerald-500/30 blur-lg scale-125" />
+                    <div className="relative w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 group-active:scale-95 transition-transform">
                       <span className="text-white">{item.icon(false)}</span>
                     </div>
                   </div>
