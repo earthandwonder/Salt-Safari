@@ -170,8 +170,8 @@ export function HomePageClient({
 
           <p className="text-lg md:text-xl text-white/90 max-w-lg mb-10 opacity-0 animate-fade-up stagger-2 drop-shadow-[0_2px_20px_rgba(0,0,0,1)] drop-shadow-[0_0_40px_rgba(0,0,0,0.6)]">
             Your complete guide to every species at Sydney&apos;s best
-            swim spot. Know what you&apos;ll see. Track what
-            you&apos;ve found.
+            swim spot. Learn about, log, and share what
+            you discover.
           </p>
 
         </div>
@@ -180,203 +180,14 @@ export function HomePageClient({
       </section>
 
       {/* ──────────────────────────────────────────
-          IN SEASON NOW
+          SHARE YOUR ADVENTURES
           ────────────────────────────────────────── */}
-      {inSeasonSpecies.length > 0 && (
-        <section className="bg-sand section-padding">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-end justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="season-dot" />
-                  <span className="text-emerald-600 text-sm font-medium tracking-wide uppercase">
-                    {inSeasonCount} In Season Now
-                  </span>
-                </div>
-                <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight">
-                  Swimming this month? Look out for these visitors.
-                </h2>
-              </div>
-            </div>
-
-            {/* Horizontal scroll on mobile, grid on desktop */}
-            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-4 lg:grid-cols-5 md:overflow-visible">
-              {inSeasonSpecies.map((item) => (
-                <Link
-                  key={item.speciesId}
-                  href={`/species/${item.slug}`}
-                  className="flex-shrink-0 w-[200px] md:w-auto group"
-                >
-                  <div className="card-lift rounded-2xl overflow-hidden bg-white shadow-sm">
-                    <div className="aspect-[4/3] relative overflow-hidden">
-                      {item.heroImageUrl ? (
-                        <Image
-                          src={item.heroImageUrl}
-                          alt={item.commonName}
-                          fill
-                          sizes="(max-width: 768px) 200px, 25vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="w-full h-full photo-placeholder-species" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-
-                      {item.isSeasonal ? (
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse-soft" />
-                          In season
-                        </div>
-                      ) : (
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/80 backdrop-blur-sm text-slate-600 text-xs font-medium px-2.5 py-1 rounded-full">
-                          Year-round
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="p-4">
-                      <h3 className="font-display text-base font-semibold text-deep group-hover:text-teal-700 transition-colors truncate">
-                        {item.commonName}
-                      </h3>
-                      {item.scientificName && (
-                        <p className="text-xs text-slate-400 italic mt-1 truncate">
-                          {item.scientificName}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Alert teaser */}
-            <div className="mt-8 bg-deep/5 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <p className="font-display text-lg font-semibold text-deep">
-                  Is there a species you&apos;re waiting to see?
-                </p>
-                <p className="text-sm text-slate-500 mt-1">
-                  We&apos;ll alert you when they&apos;re in town
-                </p>
-              </div>
-              <Link
-                href="/alerts"
-                className="bg-coral hover:bg-coral-dark text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
-              >
-                Set up alerts
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ──────────────────────────────────────────
-          THE COLLECTION — "How many can you find?"
-          ────────────────────────────────────────── */}
-      <section className="bg-white section-padding">
+      <section className="bg-sand section-padding">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-10">
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-3">
-              Your underwater gallery
+              Share your adventures
             </h2>
-            <p className="text-slate-500 text-lg leading-relaxed">
-              We&apos;ve picked {spottableCount} species you might find at Cabbage Tree Bay. How many can you see?
-            </p>
-          </div>
-
-          {/* Progress bar */}
-          <div className="mb-6">
-            <div className="flex items-baseline justify-between mb-2">
-              <p className="text-sm font-medium text-slate-600">
-                <span className="text-deep font-display text-lg font-bold">
-                  {spottedCount}
-                </span>{" "}
-                of {spottableCount.toLocaleString()} spotted
-              </p>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-1000"
-                style={{ width: `${Math.max(progressPercent, authResolved && isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Species collection grid */}
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-            {collectionPreview.map((species) => (
-              <div
-                key={species.id}
-                className="group relative rounded-xl overflow-hidden aspect-square"
-              >
-                {species.heroImageUrl ? (
-                  <Image
-                    src={species.heroImageUrl}
-                    alt={species.revealed ? species.commonName : "Unknown species"}
-                    fill
-                    sizes="(max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-                    className={`object-cover ${
-                      species.revealed
-                        ? "transition-transform duration-500 group-hover:scale-105"
-                        : "grayscale brightness-[0.3]"
-                    }`}
-                  />
-                ) : (
-                  <div
-                    className={`w-full h-full photo-placeholder-species ${
-                      !species.revealed ? "grayscale brightness-[0.3]" : ""
-                    }`}
-                  />
-                )}
-
-                {/* Overlay */}
-                {species.revealed ? (
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-3">
-                    <p className="text-white text-xs md:text-sm font-medium leading-tight drop-shadow-md">
-                      {species.commonName}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-white/20 flex items-center justify-center">
-                      <span className="text-white/30 text-lg md:text-xl font-display font-bold">
-                        ?
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Start spotting CTA */}
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/locations/sydney/cabbage-tree-bay"
-              className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
-            >
-              Start spotting
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M14 5l7 7m0 0l-7 7m7-7H3"
-                />
-              </svg>
-            </Link>
-          </div>
-
-          {/* Trip logging intro */}
-          <div className="mt-16 max-w-2xl mx-auto text-center mb-8">
-            <h3 className="font-display text-2xl md:text-3xl font-semibold text-deep tracking-tight mb-3">
-              Log your adventures
-            </h3>
             <p className="text-slate-500 text-lg leading-relaxed">
               Log your sightings after each swim and we&apos;ll build you a swim card you can share with your swim group.
             </p>
@@ -492,6 +303,202 @@ export function HomePageClient({
           </div>
         </div>
       </section>
+
+      {/* ──────────────────────────────────────────
+          THE COLLECTION — "How many can you find?"
+          ────────────────────────────────────────── */}
+      <section className="bg-white section-padding">
+        <div className="max-w-7xl mx-auto">
+          <div className="max-w-2xl mb-10">
+            <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-3">
+              Your underwater gallery
+            </h2>
+            <p className="text-slate-500 text-lg leading-relaxed">
+              We&apos;ve picked {spottableCount} species you might find at Cabbage Tree Bay. How many can you discover?
+            </p>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mb-6">
+            <div className="flex items-baseline justify-between mb-2">
+              <p className="text-sm font-medium text-slate-600">
+                <span className="text-deep font-display text-lg font-bold">
+                  {spottedCount}
+                </span>{" "}
+                of {spottableCount.toLocaleString()} spotted
+              </p>
+            </div>
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-1000"
+                style={{ width: `${Math.max(progressPercent, authResolved && isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Species collection grid */}
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+            {collectionPreview.map((species) => (
+              <div
+                key={species.id}
+                className="group relative rounded-xl overflow-hidden aspect-square"
+              >
+                {species.heroImageUrl ? (
+                  <Image
+                    src={species.heroImageUrl}
+                    alt={species.revealed ? species.commonName : "Unknown species"}
+                    fill
+                    sizes="(max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                    className={`object-cover ${
+                      species.revealed
+                        ? "transition-transform duration-500 group-hover:scale-105"
+                        : "grayscale brightness-[0.3]"
+                    }`}
+                  />
+                ) : (
+                  <div
+                    className={`w-full h-full photo-placeholder-species ${
+                      !species.revealed ? "grayscale brightness-[0.3]" : ""
+                    }`}
+                  />
+                )}
+
+                {/* Overlay */}
+                {species.revealed ? (
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-3">
+                    <p className="text-white text-xs md:text-sm font-medium leading-tight drop-shadow-md">
+                      {species.commonName}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-white/20 flex items-center justify-center">
+                      <span className="text-white/30 text-lg md:text-xl font-display font-bold">
+                        ?
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Start spotting CTA */}
+          <div className="mt-8 flex justify-center">
+            <Link
+              href="/locations/sydney/cabbage-tree-bay"
+              className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
+            >
+              Start spotting
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M14 5l7 7m0 0l-7 7m7-7H3"
+                />
+              </svg>
+            </Link>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ──────────────────────────────────────────
+          IN SEASON NOW
+          ────────────────────────────────────────── */}
+      {inSeasonSpecies.length > 0 && (
+        <section className="bg-sand section-padding">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="season-dot" />
+                  <span className="text-emerald-600 text-sm font-medium tracking-wide uppercase">
+                    {inSeasonCount} In Season Now
+                  </span>
+                </div>
+                <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight">
+                  Swimming this month? Look out for these visitors.
+                </h2>
+              </div>
+            </div>
+
+            {/* Horizontal scroll on mobile, grid on desktop */}
+            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-4 lg:grid-cols-5 md:overflow-visible">
+              {inSeasonSpecies.map((item) => (
+                <Link
+                  key={item.speciesId}
+                  href={`/species/${item.slug}`}
+                  className="flex-shrink-0 w-[200px] md:w-auto group"
+                >
+                  <div className="card-lift rounded-2xl overflow-hidden bg-white shadow-sm">
+                    <div className="aspect-[4/3] relative overflow-hidden">
+                      {item.heroImageUrl ? (
+                        <Image
+                          src={item.heroImageUrl}
+                          alt={item.commonName}
+                          fill
+                          sizes="(max-width: 768px) 200px, 25vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full photo-placeholder-species" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+
+                      {item.isSeasonal ? (
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse-soft" />
+                          In season
+                        </div>
+                      ) : (
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/80 backdrop-blur-sm text-slate-600 text-xs font-medium px-2.5 py-1 rounded-full">
+                          Year-round
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="font-display text-base font-semibold text-deep group-hover:text-teal-700 transition-colors truncate">
+                        {item.commonName}
+                      </h3>
+                      {item.scientificName && (
+                        <p className="text-xs text-slate-400 italic mt-1 truncate">
+                          {item.scientificName}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Alert teaser */}
+            <div className="mt-8 bg-deep/5 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="font-display text-lg font-semibold text-deep">
+                  Is there a species you&apos;re waiting to see?
+                </p>
+                <p className="text-sm text-slate-500 mt-1">
+                  We&apos;ll alert you when they&apos;re in town
+                </p>
+              </div>
+              <Link
+                href="/alerts"
+                className="bg-coral hover:bg-coral-dark text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
+              >
+                Set up alerts
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ──────────────────────────────────────────
           SPECIES ID TOOL

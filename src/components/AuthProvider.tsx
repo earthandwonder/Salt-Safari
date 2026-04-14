@@ -29,17 +29,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = createClient();
 
     async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        const { data } = await supabase
-          .from("users")
-          .select("username")
-          .eq("id", user.id)
-          .single();
-        setUsername(data?.username ?? null);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        setLoading(false);
+        // Fetch username in background — don't block loading state
+        if (user) {
+          try {
+            const { data } = await supabase
+              .from("users")
+              .select("username")
+              .eq("id", user.id)
+              .single();
+            setUsername(data?.username ?? null);
+          } catch {
+            // users table may not exist yet
+          }
+        }
+      } catch {
+        setLoading(false);
       }
-      setLoading(false);
     }
 
     loadUser();
@@ -48,17 +57,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, session) => {
         const newUser = session?.user ?? null;
         setUser(newUser);
+        setLoading(false);
         if (newUser) {
-          const { data } = await supabase
-            .from("users")
-            .select("username")
-            .eq("id", newUser.id)
-            .single();
-          setUsername(data?.username ?? null);
+          try {
+            const { data } = await supabase
+              .from("users")
+              .select("username")
+              .eq("id", newUser.id)
+              .single();
+            setUsername(data?.username ?? null);
+          } catch {
+            // users table may not exist yet
+          }
         } else {
           setUsername(null);
         }
-        setLoading(false);
       }
     );
 

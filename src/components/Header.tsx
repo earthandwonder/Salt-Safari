@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -8,8 +8,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { useAuth } from "@/components/AuthProvider";
 
 const NAV_LINKS = [
-  { href: "/locations/sydney/cabbage-tree-bay", label: "Cabbage Tree Bay" },
-  { href: "/locations/sydney/cabbage-tree-bay?tab=species", label: "All Species" },
+  { href: "/locations/sydney/cabbage-tree-bay?tab=species", label: "Species" },
   { href: "/id", label: "Identify" },
 ];
 
@@ -21,6 +20,8 @@ export default function Header() {
   const { user, username, loading } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -37,12 +38,34 @@ export default function Header() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  async function handleSignOut() {
+  // Close search on outside click or Escape
+  useEffect(() => {
+    if (!searchOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setSearchOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [searchOpen]);
+
+  function handleSignOut() {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    // Fire and forget — navigate regardless of whether signOut succeeds
+    supabase.auth.signOut().finally(() => {
+      window.location.href = "/";
+    });
+    // Fallback if signOut hangs
+    setTimeout(() => { window.location.href = "/"; }, 2000);
     setMenuOpen(false);
-    router.push("/");
-    router.refresh();
   }
 
   const displayName =
@@ -87,73 +110,107 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-6">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-white/70 hover:text-white transition-colors text-[15px] tracking-wide"
-            >
-              {link.label}
-            </Link>
-          ))}
-
-          {/* Search */}
-          <div className="w-52 lg:w-64">
-            <SearchBar />
-          </div>
-
-          {!loading && (
+        <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
+          {/* Nav links — hidden when search is expanded */}
+          {!searchOpen && (
             <>
-              <Link
-                href="/log"
-                className="text-white/70 hover:text-white text-sm transition-colors"
-              >
-                My Swim Log
-              </Link>
-              {user ? (
-                <div className="flex items-center gap-4">
+              {NAV_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-white/70 hover:text-white transition-colors text-[15px] tracking-wide"
+                >
+                  {link.label}
+                </Link>
+              ))}
+
+              {!loading && (
+                <>
                   <Link
-                    href="/alerts"
-                    className="text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                    </svg>
-                    Alerts
-                  </Link>
-                  <Link
-                    href={username ? `/u/${username}` : "/log"}
+                    href="/log"
                     className="text-white/70 hover:text-white text-sm transition-colors"
                   >
-                    My Profile
+                    Swim Log
                   </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className="text-white/50 hover:text-white text-sm transition-colors"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Link
-                    href={loginHref}
-                    className="text-white/70 hover:text-white text-sm transition-colors"
-                  >
-                    Sign in
-                  </Link>
-                  <Link
-                    href={signupHref}
-                    className="bg-coral hover:bg-coral-dark text-white px-5 py-2 rounded-full text-sm font-medium transition-colors"
-                  >
-                    Sign up
-                  </Link>
-                </div>
+                  {user ? (
+                    <>
+                      <Link
+                        href={username ? `/u/${username}` : "/log"}
+                        className="text-white/70 hover:text-white text-sm transition-colors"
+                      >
+                        Profile
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className="text-white/50 hover:text-white text-sm transition-colors"
+                      >
+                        Sign out
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={loginHref}
+                        className="text-white/70 hover:text-white text-sm transition-colors"
+                      >
+                        Sign in
+                      </Link>
+                      <Link
+                        href={signupHref}
+                        className="bg-coral hover:bg-coral-dark text-white px-5 py-2 rounded-full text-sm font-medium transition-colors"
+                      >
+                        Sign up
+                      </Link>
+                    </div>
+                  )}
+                </>
               )}
+
+              {/* Alerts icon — right before search */}
+              <Link
+                href="/alerts"
+                className="text-white/60 hover:text-white transition-colors p-1"
+                aria-label="Alerts"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+              </Link>
             </>
           )}
+
+          {/* Search — icon that expands into full search bar */}
+          <div ref={searchContainerRef} className={`transition-all duration-300 ${searchOpen ? "w-96" : "w-auto"}`}>
+            {searchOpen ? (
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <SearchBar autoFocus />
+                </div>
+                <button
+                  onClick={() => setSearchOpen(false)}
+                  className="text-white/50 hover:text-white transition-colors p-1"
+                  aria-label="Close search"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="text-white/60 hover:text-white transition-colors p-1"
+                aria-label="Search"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Mobile alerts + hamburger */}

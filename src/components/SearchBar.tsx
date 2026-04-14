@@ -23,7 +23,7 @@ interface LocationResult {
 
 type SearchResult = SpeciesResult | LocationResult;
 
-export function SearchBar() {
+export function SearchBar({ autoFocus = false }: { autoFocus?: boolean }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -156,6 +156,7 @@ export function SearchBar() {
             if (results.length > 0 && query.trim().length >= 2) setOpen(true);
           }}
           onKeyDown={handleKeyDown}
+          autoFocus={autoFocus}
           className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-white/20 bg-white/10 text-white text-sm placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-400/40 focus:bg-white/15 backdrop-blur-sm transition-all"
           role="combobox"
           aria-expanded={open}
