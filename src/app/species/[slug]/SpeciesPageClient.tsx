@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import { TabBar, TabPanel } from "@/components/TabBar";
 import { Footer } from "@/components/Footer";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
+import { DangerPill } from "@/components/DangerPill";
 import type { Species, Photo } from "@/types";
 import type { LocationOccurrence, SimilarSpecies } from "./page";
 import { PhotosTab } from "./PhotosTab";
@@ -131,12 +132,18 @@ export function SpeciesPageClient({
               </span>
             )}
 
-            {species.max_length_cm && (
+            {species.depth_zone && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/80 backdrop-blur-sm">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M2 12h20M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3" />
+                  <path d="M12 2v20M2 12h4M18 12h4M7 7l2 2M15 15l2 2" />
                 </svg>
-                Up to {species.max_length_cm} cm
+                {species.depth_zone === "snorkel-friendly" ? "Snorkel-friendly" : species.depth_zone === "shallow dive" ? "Shallow dive" : "Deep dive"}
+              </span>
+            )}
+
+            {species.danger_note && species.danger_note !== "harmless" && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-200 backdrop-blur-sm">
+                ⚠ {species.danger_note === "venomous" ? "Venomous" : species.danger_note === "can bite or sting" ? "Can bite or sting" : "Poisonous if eaten"}
               </span>
             )}
 

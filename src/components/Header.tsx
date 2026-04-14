@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SearchBar } from "@/components/SearchBar";
 import type { User } from "@supabase/supabase-js";
 
 const NAV_LINKS = [
@@ -120,7 +121,7 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}
@@ -130,6 +131,11 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+
+          {/* Search */}
+          <div className="w-52 lg:w-64">
+            <SearchBar />
+          </div>
 
           {!loading && (
             <>
@@ -227,6 +233,11 @@ export default function Header() {
         }`}
       >
         <div className="px-6 pt-2 pb-8 space-y-1">
+          {/* Mobile search */}
+          <div className="pb-3 mb-1 border-b border-white/10">
+            <SearchBar />
+          </div>
+
           {NAV_LINKS.map((link) => (
             <Link
               key={link.href}

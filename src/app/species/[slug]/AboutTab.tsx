@@ -1,8 +1,34 @@
 "use client";
 
 import Link from "next/link";
+import { DangerPill } from "@/components/DangerPill";
 import type { Species } from "@/types";
 import type { SimilarSpecies } from "./page";
+
+const habitatLabels: Record<string, string> = {
+  reef: "Reef",
+  sand: "Sand",
+  open_water: "Open water",
+  surface: "Surface",
+  crevice: "Crevices & caves",
+  seagrass: "Seagrass",
+  rocky_bottom: "Rocky bottom",
+  kelp: "Kelp",
+};
+
+const sizeLabels: Record<string, string> = {
+  tiny: "Tiny (<5 cm)",
+  small: "Small (5–20 cm)",
+  medium: "Medium (20–60 cm)",
+  large: "Large (60–150 cm)",
+  very_large: "Very large (150+ cm)",
+};
+
+const depthZoneLabels: Record<string, string> = {
+  "snorkel-friendly": "Snorkel-friendly (≤5 m)",
+  "shallow dive": "Shallow dive (5–18 m)",
+  "deep dive": "Deep dive (18 m+)",
+};
 
 interface AboutTabProps {
   species: Species;
@@ -10,8 +36,60 @@ interface AboutTabProps {
 }
 
 export function AboutTab({ species, similarSpecies }: AboutTabProps) {
+  const hasQuickFacts = species.size_category || species.depth_zone || species.danger_note ||
+    (species.habitat && species.habitat.length > 0) || species.where_to_look;
+
   return (
     <div className="max-w-3xl">
+      {/* ── Quick Facts (from enrichment) ── */}
+      {hasQuickFacts && (
+        <div className="rounded-2xl bg-white border border-slate-100 p-6 md:p-8 mb-8">
+          <h3 className="font-display text-lg font-semibold text-deep mb-4">
+            Quick facts
+          </h3>
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            {species.size_category && (
+              <div>
+                <dt className="text-slate-400 font-medium mb-0.5">Size</dt>
+                <dd className="text-slate-700">{sizeLabels[species.size_category] ?? species.size_category}</dd>
+              </div>
+            )}
+            {species.depth_zone && (
+              <div>
+                <dt className="text-slate-400 font-medium mb-0.5">Depth</dt>
+                <dd className="text-slate-700">{depthZoneLabels[species.depth_zone] ?? species.depth_zone}</dd>
+              </div>
+            )}
+            {species.habitat && species.habitat.length > 0 && (
+              <div>
+                <dt className="text-slate-400 font-medium mb-0.5">Habitat</dt>
+                <dd className="text-slate-700">
+                  {species.habitat.map((h) => habitatLabels[h] ?? h).join(", ")}
+                </dd>
+              </div>
+            )}
+            {species.where_to_look && (
+              <div>
+                <dt className="text-slate-400 font-medium mb-0.5">Where to look</dt>
+                <dd className="text-slate-700 capitalize">{species.where_to_look}</dd>
+              </div>
+            )}
+            {species.danger_note && (
+              <div>
+                <dt className="text-slate-400 font-medium mb-0.5">Safety</dt>
+                <dd>
+                  {species.danger_note === "harmless" ? (
+                    <span className="text-emerald-600 font-medium">Harmless</span>
+                  ) : (
+                    <DangerPill dangerNote={species.danger_note} />
+                  )}
+                </dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      )}
+
       {/* ── Summary (free tier, always visible) ── */}
       {species.summary ? (
         <div className="font-body text-slate-700 leading-relaxed space-y-6 text-[16px] md:text-[17px]">

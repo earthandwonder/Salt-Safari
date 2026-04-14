@@ -52,6 +52,7 @@ export function RegionSpeciesTab({ topSpecies, regionName }: RegionSpeciesTabPro
             likelihood={toLikelihood(entry.currentMonthLikelihood)}
             activeMonths={entry.activeMonthCount}
             isInSeason={entry.isInSeason}
+            dangerNote={entry.species.danger_note}
           />
         ))}
       </ResponsiveGrid>

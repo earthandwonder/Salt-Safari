@@ -23,3 +23,6 @@ Thumbs.db
 
 # Supabase
 supabase/.temp/
+
+# FishBase parquet data (large files, CC-BY-NC)
+data/fishbase/

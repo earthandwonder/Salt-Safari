@@ -27,6 +27,7 @@ export type SpottedSpecies = {
   commonName: string;
   scientificName: string | null;
   heroImageUrl: string | null;
+  dangerNote: string | null;
   isCherismatic: boolean;
   totalQuantity: number;
 };
@@ -80,14 +81,14 @@ async function getProfileData(username: string): Promise<ProfileData | null> {
   const speciesIds = [...new Set(sightings.map((s) => s.species_id))];
   const speciesMap = new Map<
     string,
-    { name: string; scientific_name: string | null; slug: string; hero_image_url: string | null; is_charismatic: boolean }
+    { name: string; scientific_name: string | null; slug: string; hero_image_url: string | null; danger_note: string | null; is_charismatic: boolean }
   >();
 
   for (let i = 0; i < speciesIds.length; i += 200) {
     const batch = speciesIds.slice(i, i + 200);
     const { data: species } = await supabase
       .from("species")
-      .select("id, name, scientific_name, slug, hero_image_url, is_charismatic")
+      .select("id, name, scientific_name, slug, hero_image_url, danger_note, is_charismatic")
       .in("id", batch);
     if (species) {
       for (const sp of species) {
@@ -182,6 +183,7 @@ async function getProfileData(username: string): Promise<ProfileData | null> {
         commonName: sp.name,
         scientificName: sp.scientific_name,
         heroImageUrl: sp.hero_image_url,
+        dangerNote: sp.danger_note,
         isCherismatic: sp.is_charismatic,
         totalQuantity: quantityBySpecies.get(spId) ?? 1,
       });

@@ -88,7 +88,7 @@ export default async function HomePage() {
   // --- Get Cabbage Tree Bay location ---
   const { data: ctbLocation } = await supabase
     .from("locations")
-    .select("id, name, slug, region_id, hero_image_url")
+    .select("id, name, slug, region_id, hero_image_url, lat, lng")
     .eq("slug", CTB_SLUG)
     .single();
 
@@ -361,6 +361,8 @@ export default async function HomePage() {
       userLatestLog={userLatestLog}
       isLoggedIn={isLoggedIn}
       heroImageUrl={ctbLocation.hero_image_url}
+      locationLat={ctbLocation.lat}
+      locationLng={ctbLocation.lng}
     />
   );
 }

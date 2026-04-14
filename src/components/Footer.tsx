@@ -89,6 +89,11 @@ export function Footer() {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link href="/dmca" className="text-sm hover:text-teal-300 transition-colors">
+                  DMCA & Takedowns
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

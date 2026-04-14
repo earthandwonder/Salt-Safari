@@ -1041,42 +1041,7 @@ Goal: Enrich Cabbage Tree Bay data, build search/maps/admin/legal — complete t
 
 ---
 
-### Session 21: Admin Dashboard
-
-**Goal:** Protected admin interface for managing content and triggering pipeline runs.
-
-**Read first:** `docs/18-plan-app-website-build.md` section "Admin Dashboard".
-
-**Steps:**
-
-1. **Admin layout** — `src/app/admin/layout.tsx`
-   - Server Component. Check if current user has `is_admin = TRUE`. Redirect to home if not.
-   - Simple sidebar navigation: Overview, Locations, Species, Photos, Pipeline.
-
-2. **Admin pages:**
-   - `/admin` — overview stats: content counts by `data_quality` and status. "Needs attention" list (species with `worms_aphia_id = NULL`, locations with `data_quality = 'stub'`).
-   - `/admin/locations` — table of all locations (including unpublished). Columns: name, region, data_quality, description_status, published, species count, last_synced_at. Bulk actions: publish/unpublish.
-   - `/admin/species` — table of all species. Columns: name, scientific_name, deep_dive_status, data_quality, worms_aphia_id, photo count. Actions: edit, publish/unpublish.
-   - `/admin/photos` — grid view of all photos. Filter by location, species, license, is_hero. Actions: edit attribution, set/unset hero.
-   - `/admin/pipeline` — per-location pipeline status. Last sync date, species count, error status. "Run pipeline" button per location. "Run all" button.
-
-3. **Pipeline API routes**
-   - `POST /api/pipeline/run` — body: `{ locationSlug }`. Admin only. Triggers pipeline for one location.
-   - `POST /api/pipeline/run-all` — Admin only. Triggers pipeline for all locations.
-   - These should run async (return immediately, process in background). Use a simple status tracking mechanism.
-
-4. **Admin middleware**
-   - Check `users.is_admin` on every admin route. Reject with 403 if not admin.
-
-**Guidance:**
-- The admin dashboard doesn't need to be beautiful. Functional tables with sort/filter/actions are sufficient.
-- Use the `/design` skill for basic layout but don't over-invest — this is internal tooling.
-- The pipeline run buttons should show progress (at minimum: "Running...", "Complete", "Error").
-- To make yourself an admin: directly update your user row in the database: `UPDATE users SET is_admin = TRUE WHERE id = '{your-user-id}'`.
-
----
-
-### Session 22: Legal Pages + Google Search Console
+### Session 21: Legal Pages + Google Search Console
 
 **Goal:** Privacy policy, terms of service, cookie consent, DMCA page.
 
@@ -1111,6 +1076,41 @@ Goal: Enrich Cabbage Tree Bay data, build search/maps/admin/legal — complete t
 ## Phase 2b: Expand Locations
 
 Goal: Now that the feature set is complete for Cabbage Tree Bay, expand to all Sydney + Central Coast locations.
+
+---
+
+### Session 22: Admin Dashboard
+
+**Goal:** Protected admin interface for managing content and triggering pipeline runs.
+
+**Read first:** `docs/18-plan-app-website-build.md` section "Admin Dashboard".
+
+**Steps:**
+
+1. **Admin layout** — `src/app/admin/layout.tsx`
+   - Server Component. Check if current user has `is_admin = TRUE`. Redirect to home if not.
+   - Simple sidebar navigation: Overview, Locations, Species, Photos, Pipeline.
+
+2. **Admin pages:**
+   - `/admin` — overview stats: content counts by `data_quality` and status. "Needs attention" list (species with `worms_aphia_id = NULL`, locations with `data_quality = 'stub'`).
+   - `/admin/locations` — table of all locations (including unpublished). Columns: name, region, data_quality, description_status, published, species count, last_synced_at. Bulk actions: publish/unpublish.
+   - `/admin/species` — table of all species. Columns: name, scientific_name, deep_dive_status, data_quality, worms_aphia_id, photo count. Actions: edit, publish/unpublish.
+   - `/admin/photos` — grid view of all photos. Filter by location, species, license, is_hero. Actions: edit attribution, set/unset hero.
+   - `/admin/pipeline` — per-location pipeline status. Last sync date, species count, error status. "Run pipeline" button per location. "Run all" button.
+
+3. **Pipeline API routes**
+   - `POST /api/pipeline/run` — body: `{ locationSlug }`. Admin only. Triggers pipeline for one location.
+   - `POST /api/pipeline/run-all` — Admin only. Triggers pipeline for all locations.
+   - These should run async (return immediately, process in background). Use a simple status tracking mechanism.
+
+4. **Admin middleware**
+   - Check `users.is_admin` on every admin route. Reject with 403 if not admin.
+
+**Guidance:**
+- The admin dashboard doesn't need to be beautiful. Functional tables with sort/filter/actions are sufficient.
+- Use the `/design` skill for basic layout but don't over-invest — this is internal tooling.
+- The pipeline run buttons should show progress (at minimum: "Running...", "Complete", "Error").
+- To make yourself an admin: directly update your user row in the database: `UPDATE users SET is_admin = TRUE WHERE id = '{your-user-id}'`.
 
 ---
 

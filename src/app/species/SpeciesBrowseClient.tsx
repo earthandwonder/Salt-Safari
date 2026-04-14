@@ -13,6 +13,7 @@ type BrowseSpecies = {
   size_category: string | null;
   colours: string[];
   habitat: string[];
+  danger_note: string | null;
   family: string | null;
   phylum: string | null;
   class: string | null;
@@ -174,8 +175,23 @@ export function SpeciesBrowseClient({
                 setPage(1);
                 updateUrl({ q: e.target.value || null, page: null });
               }}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-coral/40 focus:border-coral backdrop-blur-sm transition-colors"
+              className="w-full pl-10 pr-9 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-coral/40 focus:border-coral backdrop-blur-sm transition-colors"
             />
+            {search && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setPage(1);
+                  updateUrl({ q: null, page: null });
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -328,6 +344,7 @@ export function SpeciesBrowseClient({
                   scientificName={s.scientific_name}
                   heroImageUrl={s.hero_image_url}
                   likelihood="common"
+                  dangerNote={s.danger_note}
                 />
               ))}
             </ResponsiveGrid>

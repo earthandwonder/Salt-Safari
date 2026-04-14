@@ -20,6 +20,8 @@ type NearbyLocation = {
   id: string;
   name: string;
   slug: string;
+  lat: number | null;
+  lng: number | null;
   hero_image_url: string | null;
   skill_level: Location["skill_level"];
   depth_min: number | null;
@@ -171,7 +173,7 @@ async function getLocationData(regionSlug: string, siteSlug: string) {
   // 9. Nearby locations from same region
   const { data: nearbyRaw } = await supabase
     .from("locations")
-    .select("id, name, slug, hero_image_url, skill_level, depth_min, depth_max, activities")
+    .select("id, name, slug, lat, lng, hero_image_url, skill_level, depth_min, depth_max, activities")
     .eq("region_id", region.id)
     .eq("published", true)
     .neq("id", location.id)

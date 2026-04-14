@@ -4,6 +4,8 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import { WaveDivider } from "@/components/WaveDivider";
 import { Footer } from "@/components/Footer";
+import { MapView, MapPin } from "@/components/MapView";
+import { Marker } from "react-map-gl/mapbox";
 
 type InSeasonSpecies = {
   speciesId: string;
@@ -49,6 +51,8 @@ interface HomePageClientProps {
   userLatestLog?: UserLatestLog | null;
   isLoggedIn?: boolean;
   heroImageUrl?: string | null;
+  locationLat?: number | null;
+  locationLng?: number | null;
 }
 
 export function HomePageClient({
@@ -62,6 +66,8 @@ export function HomePageClient({
   userLatestLog,
   isLoggedIn,
   heroImageUrl,
+  locationLat,
+  locationLng,
 }: HomePageClientProps) {
   const spottedCount = isLoggedIn ? (userSpottedCount ?? 0) : 0;
   const progressPercent = spottableCount > 0 ? Math.round((spottedCount / spottableCount) * 100) : 0;
@@ -848,70 +854,25 @@ export function HomePageClient({
 
             </div>
 
-            {/* Map placeholder */}
+            {/* Map */}
             <div className="relative">
-              <div
-                id="reserve-map"
-                className="aspect-[4/3] md:aspect-square rounded-2xl overflow-hidden shadow-lg"
-              >
-                <div className="w-full h-full bg-gradient-to-br from-sky-800 via-cyan-900 to-teal-900 relative flex flex-col items-center justify-center">
-                  {/* Decorative grid lines */}
-                  <div className="absolute inset-0 opacity-10">
-                    <div
-                      className="w-full h-full"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)",
-                        backgroundSize: "40px 40px",
-                      }}
-                    />
+              <div className="aspect-[4/3] md:aspect-square rounded-2xl overflow-hidden shadow-lg">
+                {locationLat && locationLng ? (
+                  <MapView
+                    center={{ lat: locationLat, lng: locationLng }}
+                    zoom={14}
+                    height={undefined}
+                    style={{ width: "100%", height: "100%" }}
+                  >
+                    <Marker longitude={locationLng} latitude={locationLat} anchor="bottom">
+                      <MapPin label="Cabbage Tree Bay" />
+                    </Marker>
+                  </MapView>
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-sky-800 via-cyan-900 to-teal-900 flex items-center justify-center">
+                    <p className="text-white/50 text-sm">Map loading...</p>
                   </div>
-
-                  {/* Pin */}
-                  <div className="relative z-10 flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full bg-coral flex items-center justify-center shadow-lg shadow-coral/30 mb-3">
-                      <svg
-                        className="w-6 h-6 text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                    </div>
-                    <p className="font-display text-lg font-semibold text-white mb-1">
-                      Cabbage Tree Bay
-                    </p>
-                    <p className="text-white/40 text-xs font-mono tracking-wide">
-                      33.7983&deg;S, 151.2900&deg;E
-                    </p>
-                  </div>
-
-                  {/* Decorative wave at bottom */}
-                  <div className="absolute bottom-0 left-0 right-0">
-                    <svg
-                      viewBox="0 0 400 40"
-                      preserveAspectRatio="none"
-                      className="w-full h-8 opacity-10"
-                    >
-                      <path
-                        d="M0,20 C100,40 200,0 300,20 C350,30 375,25 400,20 L400,40 L0,40 Z"
-                        fill="white"
-                      />
-                    </svg>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

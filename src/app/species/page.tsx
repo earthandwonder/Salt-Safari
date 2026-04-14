@@ -21,7 +21,7 @@ export default async function SpeciesBrowsePage() {
   const { data: allSpecies, count } = await supabase
     .from("species")
     .select(
-      "slug, name, scientific_name, hero_image_url, size_category, colours, habitat, family, phylum, class, order",
+      "slug, name, scientific_name, hero_image_url, size_category, colours, habitat, danger_note, family, phylum, class, order",
       { count: "exact" }
     )
     .eq("published", true)

@@ -1168,3 +1168,240 @@
 
 ### Deviations
 - None.
+
+---
+
+## Session 22 — Mapbox Maps on All Pages (Implementation Prompt Session 20)
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+#### Shared map component
+- **New component:** `src/components/MapView.tsx`
+  - Reusable wrapper around `react-map-gl/mapbox` Map component.
+  - Props: `center` (lat/lng), `zoom`, `height`, `children`, `style`.
+  - Encapsulates Mapbox token check, `NavigationControl`, map style, scroll zoom disabled, attribution hidden.
+  - Graceful fallback message when Mapbox token not configured.
+  - Rounded corners + border styling matching design system.
+
+- **`MapPin` component** — coral pin marker with optional label (two sizes: default + small).
+- **`MapPinSecondary` component** — teal pin for nearby/secondary locations, smaller size with optional label.
+
+#### Location page map tab refactored
+- **`src/app/locations/[region]/[site]/MapTab.tsx`:**
+  - Refactored to use shared `MapView`, `MapPin`, `MapPinSecondary` components.
+  - Nearby locations from same region now shown as teal pins on the map (previously only shown as cards below).
+  - Auto-calculates zoom to fit both primary location and nearby locations when coordinates available.
+  - Primary location pin (coral) renders on top of nearby pins (teal).
+
+- **`src/app/locations/[region]/[site]/page.tsx`:**
+  - Nearby locations query now includes `lat, lng` fields for map pin placement.
+
+- **NearbyLocation type updated** in `page.tsx`, `LocationPageClient.tsx`, and `MapTab.tsx` — added `lat: number | null` and `lng: number | null`.
+
+#### Region page map tab refactored
+- **`src/app/locations/[region]/RegionMapTab.tsx`:**
+  - Refactored to use shared `MapView` and `MapPin` components.
+  - Popup interaction preserved (click pin → location name, species count, in-season indicator, link).
+  - Location list below map preserved.
+
+### Deviations
+- Supercluster clustering not added — with only one region and one location currently, clustering would add complexity with no benefit. The `supercluster` package is already bundled with `mapbox-gl` and can be integrated when multiple locations per region exist.
+- No lazy loading added — maps are already behind tabs, so they only render when the tab is active.
+
+### Build
+- `npm run build` passes clean. Location page is 10.5 kB first load JS. Region page is 7.29 kB first load JS.
+
+---
+
+## Session 23 — FishBase Enrichment (Implementation Prompt Session 18)
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+#### FishBase parquet data download
+- Downloaded `species.parquet` (5.0 MB, 36,132 species) and `ecology.parquet` (1.4 MB) from [cboettig/fishbase on HuggingFace](https://huggingface.co/datasets/cboettig/fishbase) (v25.04).
+- Stored in `data/fishbase/` (gitignored — large files, CC-BY-NC license).
+
+#### DuckDB dependency
+- Installed `duckdb-async` for reading parquet files in Node.js scripts.
+
+#### Enrichment script — derived fields only
+- **New:** `scripts/enrich-fishbase.ts`
+  - Loads FishBase species + ecology parquet files via DuckDB.
+  - Joins species table with ecology table on `SpecCode`, matches to Supabase species by scientific name (case-insensitive).
+  - **No raw FishBase data stored** — only our own derived classifications.
+  - Supports `--dry-run` flag.
+  - Usage: `npx tsx scripts/enrich-fishbase.ts [--dry-run]`
+  - **Re-run safe:** can be re-run anytime when new species are added. Overwrites previous values.
+
+#### Derivation rules (for consistency when adding new species)
+
+##### `size_category` — from FishBase `species.Length` (max recorded length in cm)
+| FishBase Length | Our category |
+|---|---|
+| < 5 cm | `tiny` |
+| 5–14 cm | `small` |
+| 15–39 cm | `medium` |
+| 40–99 cm | `large` |
+| ≥ 100 cm | `very_large` |
+
+##### `habitat[]` — from FishBase ecology booleans → our 8-tag vocabulary
+| FishBase ecology boolean(s) | Our tag |
+|---|---|
+| `CoralReefs = -1` | `reef` |
+| `Sand = -1` OR `SoftBottom = -1` | `sand` |
+| `Pelagic = -1` | `open_water` |
+| `Crevices = -1` | `crevice` |
+| `SeaGrassBeds = -1` | `seagrass` |
+| `Rocky = -1` OR `HardBottom = -1` | `rocky_bottom` |
+| `Macrophyte = -1` | `kelp` |
+| `Intertidal = -1` | `surface` |
+
+If no ecology booleans match, falls back to `species.DemersPelag`:
+- `reef-associated` → `reef`
+- `pelagic` / `pelagic-neritic` / `pelagic-oceanic` → `open_water`
+- `demersal` / `bathydemersal` → `rocky_bottom` + `sand`
+- `benthopelagic` → `reef` + `open_water`
+- `bathypelagic` → `open_water`
+
+##### `depth_zone` — from FishBase depth fields (shallowest typical depth)
+Uses `DepthRangeComShallow` if available, else `DepthRangeShallow`. Based on where the species is typically *found*, not its full range.
+| Shallowest common depth | Our zone |
+|---|---|
+| ≤ 5 m | `snorkel-friendly` |
+| 6–18 m | `shallow dive` |
+| > 18 m | `deep dive` |
+
+##### `danger_note` — from FishBase `species.Dangerous`
+| FishBase Dangerous value | Our note |
+|---|---|
+| `harmless` | `harmless` |
+| `venomous` | `venomous` |
+| `traumatogenic` | `can bite or sting` |
+| `poisonous to eat` / `reports of ciguatera poisoning` | `poisonous if eaten` |
+| `potential pest` / `other` | *skipped* |
+
+##### `where_to_look` — human-readable spotting tips from ecology booleans
+Builds a semicolon-separated phrase (max 3 hints) from ecology booleans:
+- `Crevices` → "hiding in crevices"
+- `Burrows` → "buried in sand"
+- `SeaGrassBeds` → "among seagrass"
+- `Macrophyte` → "around kelp"
+- `CoralReefs` (if not Crevices) → "on the reef"
+- `DropOffs` → "near drop-offs"
+- `Pelagic` → "hovering mid-water"
+- `Intertidal` → "in rockpools and shallows"
+- `Sand`/`SoftBottom` (if not Burrows) → "over sandy bottom"
+- `Rocky`/`HardBottom` (if not CoralReefs) → "around rocky reef"
+- `Benthic` (fallback) → "on the bottom"
+
+Falls back to `DemersPelag` if no ecology booleans: `reef-associated` → "on the reef", `pelagic`/`pelagic-neritic` → "in open water", `demersal`/`bathydemersal` → "near the bottom", etc.
+
+#### Database migrations
+- **New:** `supabase/migrations/20260414100000_add_derived_species_fields.sql`
+  - Added 3 new columns: `depth_zone`, `danger_note`, `where_to_look`.
+  - Cleared previously-written raw FishBase values for CC-BY-NC compliance.
+- **New:** `supabase/migrations/20260414200000_drop_max_length_cm.sql`
+  - Dropped 6 raw FishBase columns entirely: `max_length_cm`, `depth_min_m`, `depth_max_m`, `depth_common_min_m`, `depth_common_max_m`, `habitat_type`.
+  - These columns only ever held CC-BY-NC data. We derive `size_category`, `depth_zone`, and `habitat[]` instead.
+- **Updated:** `src/types/database.ts` — added new derived field types, removed all 6 raw FishBase columns.
+
+#### Enrichment results
+- **483 of 1,000 species enriched** (48.3% match rate).
+- 517 unmatched species are primarily invertebrates (not in FishBase — would need SeaLifeBase for those).
+- 0 errors.
+
+#### Species ID tool — depth_zone filter
+- **`src/app/id/page.tsx`:** Added "How deep were you?" as step 3 (after month, before size). Three options: Snorkelling (≤5m), Shallow dive (5–18m), Deep dive (18m+). Skippable.
+- **`src/app/api/species/identify/route.ts`:** Added `depth_zone` to species query and scoring (weight 2, between habitat at 1.5 and size at 3). Included in match count for Confirmed/Likely/Possible labels.
+
+#### DangerPill component — site-wide safety warnings
+- **New:** `src/components/DangerPill.tsx` — red warning pill, compact mode for cards.
+  - Shows for `venomous`, `can bite or sting`, `poisonous if eaten`. Hidden for `harmless` and `null`.
+- **Added to `SpeciesCard`** — new optional `dangerNote` prop, red pill appears alongside likelihood/season badges.
+- **Wired into all 5 SpeciesCard usages:**
+  - `SpeciesTab.tsx` (location species grid)
+  - `SpottedTab.tsx` (spotted collection grid)
+  - `RegionSpeciesTab.tsx` (region species grid)
+  - `SpeciesBrowseClient.tsx` (browse all species page — added `danger_note` to type + query)
+  - `ProfilePageClient.tsx` (user profile spotted tab — added `danger_note` to type + query)
+
+#### Species detail page — enrichment data display
+- **`SpeciesPageClient.tsx` hero badges:**
+  - Added `depth_zone` badge (Snorkel-friendly / Shallow dive / Deep dive).
+  - Added `danger_note` badge (red, for non-harmless species).
+  - Removed `max_length_cm` badge (column dropped).
+- **`AboutTab.tsx` — new "Quick facts" section:**
+  - Shows above summary content (visible even when summary is "coming soon").
+  - Displays: Size, Depth, Habitat (tags as readable labels), Where to look, Safety.
+  - Safety shows green "Harmless" text or red DangerPill for dangerous species.
+
+#### Pre-existing build fix
+- Fixed `NearbyLocation` type mismatch in `MapTab.tsx` — was missing `lat` and `lng` fields (from Session 22 changes).
+
+#### .gitignore
+- Added `data/fishbase/` to `.gitignore`.
+
+### Deviations
+- Initially wrote raw FishBase values (depth ranges, max length, habitat type) to the database. User correctly flagged this as copying CC-BY-NC data rather than deriving from it. Script was rewritten to only produce our own classifications. Raw values were cleared and columns dropped.
+- SeaLifeBase enrichment (for invertebrates) not implemented — would improve coverage from 48% to ~70-80%. Can be a follow-up task.
+
+### CC-BY-NC compliance note
+FishBase parquet files are read as transient input only. The enrichment script reads FishBase values in memory, applies our derivation rules (documented above), and writes only our own classifications to the database. No raw FishBase data is stored in Supabase. The 6 columns that previously held raw FishBase values (`max_length_cm`, `depth_min_m`, `depth_max_m`, `depth_common_min_m`, `depth_common_max_m`, `habitat_type`) have been dropped from the schema entirely.
+
+### Build
+- `npm run build` passes clean.
+
+---
+
+## Session 24 — Legal Pages + Cookie Consent (Implementation Prompt Session 22)
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+#### Privacy Policy — `src/app/privacy/page.tsx`
+- Full privacy policy covering: data collected (email, sightings, analytics), Supabase as data processor, Google Analytics, Stripe payments, no sale of data.
+- Australian Privacy Act 1988 compliance.
+- Sections: information collected, usage, data sharing (lists all processors), retention, cookies, user rights, security, third-party links, changes, contact.
+- Lawyer-review disclaimer banner at top.
+
+#### Terms of Service — `src/app/terms/page.tsx`
+- Covers: service description, species data disclaimer (informational only, not guaranteed), data attribution (iNat, ALA, OBIS, WoRMS), user accounts, user-generated content license, premium features (A$9.99 one-off), prohibited use, limitation of liability, IP, termination, governing law (NSW), changes, contact.
+- Lawyer-review disclaimer banner at top.
+
+#### DMCA & Takedown Policy — `src/app/dmca/page.tsx`
+- Takedown request process with 5-step checklist for copyright holders.
+- 48-hour response commitment.
+- Self-hosting and license audit trail mentioned.
+- Also covers attribution corrections.
+
+#### Cookie Consent Banner — `src/components/CookieConsent.tsx`
+- Client component, appears on first visit (checks `localStorage`).
+- "Accept all" (coral button) and "Essential only" options.
+- Stores choice in `localStorage` as `salt-safari-cookie-consent`.
+- Positioned above mobile bottom nav (`bottom-20 md:bottom-0`).
+- Deep navy card, rounded, shadow. Added to root layout.
+
+#### Footer update — `src/components/Footer.tsx`
+- Added "DMCA & Takedowns" link to Legal section.
+
+#### Cross-linking
+- All three legal pages link to each other at the bottom.
+
+### Files changed
+- `src/app/privacy/page.tsx` — **new**
+- `src/app/terms/page.tsx` — **new**
+- `src/app/dmca/page.tsx` — **new**
+- `src/components/CookieConsent.tsx` — **new**
+- `src/components/Footer.tsx` — added DMCA link
+- `src/app/layout.tsx` — added CookieConsent component
+
+### Google Search Console
+- Not code — user must manually verify domain ownership and submit sitemap URL at search.google.com/search-console.
+
+### Deviations
+- None.

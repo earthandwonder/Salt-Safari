@@ -251,6 +251,7 @@ export function SpottedTab({
                 activeMonths={activeMonthCount}
                 isInSeason={isInSeason}
                 isSpotted={isSpotted}
+                dangerNote={species.danger_note}
               />
               {/* Quick-log button — unspotted only, redirects to login if not authenticated */}
               {!isSpotted && onLogSighting && (

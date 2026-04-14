@@ -10,6 +10,7 @@ type MatchedSpecies = {
   size_category: string | null;
   colours: string[];
   habitat: string[];
+  depth_zone: string | null;
   matchScore: number;
   matchLabel: "Confirmed" | "Likely" | "Possible";
 };
@@ -20,11 +21,13 @@ export async function GET(request: NextRequest) {
   const rawLocation = searchParams.get("location"); // location slug
   const location = rawLocation === "__all__" ? null : rawLocation;
   const monthParam = searchParams.get("month"); // 0-11
+  const depthParam = searchParams.get("depth"); // depth zone
   const size = searchParams.get("size");
   const coloursParam = searchParams.get("colours"); // comma-separated
   const habitatParam = searchParams.get("habitat");
 
   const month = monthParam !== null ? parseInt(monthParam, 10) : null;
+  const depth = depthParam || null;
   const colours = coloursParam ? coloursParam.split(",").filter(Boolean) : [];
   const habitat = habitatParam || null;
 
@@ -142,6 +145,7 @@ export async function GET(request: NextRequest) {
     size_category: string | null;
     colours: string[];
     habitat: string[];
+    depth_zone: string | null;
     confidence: number | null;
   }> = [];
 
@@ -152,7 +156,7 @@ export async function GET(request: NextRequest) {
       const batch = speciesIds.slice(i, i + 200);
       const { data } = await supabase
         .from("species")
-        .select("id, slug, name, scientific_name, hero_image_url, size_category, colours, habitat")
+        .select("id, slug, name, scientific_name, hero_image_url, size_category, colours, habitat, depth_zone")
         .in("id", batch)
         .eq("published", true);
 
@@ -194,7 +198,7 @@ export async function GET(request: NextRequest) {
     while (hasMore) {
       const { data } = await supabase
         .from("species")
-        .select("id, slug, name, scientific_name, hero_image_url, size_category, colours, habitat")
+        .select("id, slug, name, scientific_name, hero_image_url, size_category, colours, habitat, depth_zone")
         .eq("published", true)
         .range(from, from + batchSize - 1);
 
@@ -214,6 +218,7 @@ export async function GET(request: NextRequest) {
   const WEIGHT_SIZE = 3;
   const WEIGHT_COLOUR = 4;
   const WEIGHT_HABITAT = 1.5;
+  const WEIGHT_DEPTH = 2;
   const WEIGHT_SEASON = 1.5;
 
   const scored: MatchedSpecies[] = [];
@@ -250,6 +255,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Depth zone match (weight 2)
+    if (depth) {
+      totalWeight += WEIGHT_DEPTH;
+      if (sp.depth_zone === depth) {
+        weightedScore += WEIGHT_DEPTH;
+      }
+    }
+
     // Seasonality match (weight 1.5)
     if (seasonalSpeciesIds !== null) {
       totalWeight += WEIGHT_SEASON;
@@ -274,6 +287,7 @@ export async function GET(request: NextRequest) {
         if (sp.colours?.some((c) => colours.includes(c))) matchCount++;
       }
       if (habitat) { totalCriteria++; if (sp.habitat?.includes(habitat)) matchCount++; }
+      if (depth) { totalCriteria++; if (sp.depth_zone === depth) matchCount++; }
       if (seasonalSpeciesIds !== null) { totalCriteria++; if (seasonalSpeciesIds.has(sp.id)) matchCount++; }
 
       let matchLabel: "Confirmed" | "Likely" | "Possible";
@@ -294,6 +308,7 @@ export async function GET(request: NextRequest) {
         size_category: sp.size_category,
         colours: sp.colours,
         habitat: sp.habitat,
+        depth_zone: sp.depth_zone,
         matchScore: score,
         matchLabel,
       });
@@ -308,10 +323,10 @@ export async function GET(request: NextRequest) {
 
   // Debug: log scoring breakdown for top 10 results
   console.log("--- Species ID Debug ---");
-  console.log("Filters:", { location, month, size, colours, habitat });
+  console.log("Filters:", { location, month, depth, size, colours, habitat });
   results.slice(0, 10).forEach((r, i) => {
     const sp = allSpecies.find((s) => s.id === r.id);
-    console.log(`#${i + 1} ${r.name} | score=${r.matchScore.toFixed(3)} label=${r.matchLabel} | size=${r.size_category} colours=${JSON.stringify(r.colours)} habitat=${JSON.stringify(r.habitat)} confidence=${sp?.confidence} seasonal=${seasonalSpeciesIds ? seasonalSpeciesIds.has(r.id) : "n/a"}`);
+    console.log(`#${i + 1} ${r.name} | score=${r.matchScore.toFixed(3)} label=${r.matchLabel} | size=${r.size_category} depth=${r.depth_zone} colours=${JSON.stringify(r.colours)} habitat=${JSON.stringify(r.habitat)} confidence=${sp?.confidence} seasonal=${seasonalSpeciesIds ? seasonalSpeciesIds.has(r.id) : "n/a"}`);
   });
 
   return NextResponse.json({ results, total: scored.length });

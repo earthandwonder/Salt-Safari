@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LikelihoodPill, type Likelihood } from "./LikelihoodPill";
 import { SeasonBadge } from "./SeasonBadge";
+import { DangerPill } from "./DangerPill";
 
 interface SpeciesCardProps {
   slug: string;
@@ -16,6 +17,8 @@ interface SpeciesCardProps {
   isSpotted?: boolean;
   /** Total quantity spotted (shows ×N badge when > 1). */
   spottedCount?: number;
+  /** Danger classification from FishBase enrichment. */
+  dangerNote?: string | null;
   className?: string;
 }
 
@@ -29,6 +32,7 @@ export function SpeciesCard({
   isInSeason = false,
   isSpotted = false,
   spottedCount,
+  dangerNote,
   className = "",
 }: SpeciesCardProps) {
   return (
@@ -94,6 +98,7 @@ export function SpeciesCard({
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <LikelihoodPill likelihood={likelihood} />
           <SeasonBadge activeMonths={activeMonths} isCurrentlyActive={isInSeason} />
+          <DangerPill dangerNote={dangerNote} compact />
         </div>
       </div>
     </Link>

@@ -150,6 +150,7 @@ export function ProfilePageClient({ profile }: { profile: ProfileData }) {
                       likelihood="common"
                       isSpotted
                       spottedCount={sp.totalQuantity}
+                      dangerNote={sp.dangerNote}
                     />
                   ))}
                 </ResponsiveGrid>

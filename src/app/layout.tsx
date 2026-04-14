@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
+import { CookieConsent } from "@/components/CookieConsent";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -50,6 +51,7 @@ export default function RootLayout({
       <body className="font-body antialiased pb-20 md:pb-0">
         {children}
         <BottomNav />
+        <CookieConsent />
       </body>
     </html>
   );

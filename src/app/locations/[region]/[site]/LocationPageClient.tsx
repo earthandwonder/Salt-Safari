@@ -18,6 +18,8 @@ type NearbyLocation = {
   id: string;
   name: string;
   slug: string;
+  lat: number | null;
+  lng: number | null;
   hero_image_url: string | null;
   skill_level: Location["skill_level"];
   depth_min: number | null;

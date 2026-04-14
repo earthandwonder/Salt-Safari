@@ -50,6 +50,12 @@ const HABITATS = [
   { id: "kelp", label: "In kelp", icon: "🌱" },
 ];
 
+const DEPTH_ZONES = [
+  { id: "snorkel-friendly", label: "Snorkelling", desc: "Surface to ~5 m", icon: "🤿" },
+  { id: "shallow dive", label: "Shallow dive", desc: "5–18 m", icon: "🫧" },
+  { id: "deep dive", label: "Deep dive", desc: "18 m+", icon: "🌊" },
+];
+
 /* ============================================================
    TYPES
    ============================================================ */
@@ -70,11 +76,12 @@ type SpeciesResult = {
   matchLabel: "Confirmed" | "Likely" | "Possible";
 };
 
-type StepId = "location" | "month" | "size" | "colours" | "habitat";
+type StepId = "location" | "month" | "size" | "colours" | "habitat" | "depth";
 
 const STEPS: { id: StepId; title: string; subtitle: string }[] = [
   { id: "location", title: "Where did you see it?", subtitle: "Pick the location or region" },
   { id: "month", title: "When?", subtitle: "Which month did you see it?" },
+  { id: "depth", title: "How deep were you?", subtitle: "Roughly how deep when you spotted it" },
   { id: "size", title: "How big was it?", subtitle: "Rough body size, not including tail" },
   { id: "colours", title: "What colours did you see?", subtitle: "Select up to 3 main colours" },
   { id: "habitat", title: "Where was it?", subtitle: "What kind of environment?" },
@@ -102,12 +109,14 @@ function SpeciesIdWizard() {
   const [answers, setAnswers] = useState<{
     location: string | null;
     month: number | null;
+    depth: string | null;
     size: string | null;
     colours: string[];
     habitat: string | null;
   }>({
     location: prefilledLocation || null,
     month: new Date().getMonth(),
+    depth: null,
     size: null,
     colours: [],
     habitat: null,
@@ -182,6 +191,8 @@ function SpeciesIdWizard() {
         return answers.location !== null;
       case "month":
         return answers.month !== null;
+      case "depth":
+        return answers.depth !== null;
       case "size":
         return answers.size !== null;
       case "colours":
@@ -196,6 +207,7 @@ function SpeciesIdWizard() {
     const params = new URLSearchParams();
     if (answers.location) params.set("location", answers.location);
     if (answers.month !== null) params.set("month", answers.month.toString());
+    if (answers.depth) params.set("depth", answers.depth);
     if (answers.size) params.set("size", answers.size);
     if (answers.colours.length > 0) params.set("colours", answers.colours.join(","));
     if (answers.habitat) params.set("habitat", answers.habitat);
@@ -237,6 +249,7 @@ function SpeciesIdWizard() {
     setAnswers({
       location: null,
       month: new Date().getMonth(),
+      depth: null,
       size: null,
       colours: [],
       habitat: null,
@@ -402,6 +415,29 @@ function SpeciesIdWizard() {
                     }`}
                   >
                     <p className="font-medium text-slate-700">{month}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* STEP: Depth */}
+            {step.id === "depth" && (
+              <div className="space-y-3">
+                {DEPTH_ZONES.map((zone) => (
+                  <button
+                    key={zone.id}
+                    onClick={() =>
+                      setAnswers({ ...answers, depth: zone.id })
+                    }
+                    className={`step-option w-full text-left flex items-center gap-4 ${
+                      answers.depth === zone.id ? "selected" : ""
+                    }`}
+                  >
+                    <span className="text-2xl">{zone.icon}</span>
+                    <div>
+                      <p className="font-medium text-slate-800">{zone.label}</p>
+                      <p className="text-sm text-slate-400">{zone.desc}</p>
+                    </div>
                   </button>
                 ))}
               </div>

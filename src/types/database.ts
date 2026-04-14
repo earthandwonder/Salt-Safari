@@ -63,12 +63,9 @@ export type Species = {
   colours: string[];
   habitat: string[];
   behaviour_tags: string[];
-  max_length_cm: number | null;
-  depth_min_m: number | null;
-  depth_max_m: number | null;
-  depth_common_min_m: number | null;
-  depth_common_max_m: number | null;
-  habitat_type: string | null;
+  depth_zone: "snorkel-friendly" | "shallow dive" | "deep dive" | null;
+  danger_note: "harmless" | "venomous" | "can bite or sting" | "poisonous if eaten" | null;
+  where_to_look: string | null;
   iucn_category: string | null;
   is_endemic: boolean | null;
   is_native: boolean | null;
