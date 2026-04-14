@@ -85,9 +85,9 @@ export default async function RegionsIndexPage() {
             Discover marine species at snorkelling and diving locations across Australia&apos;s coastline.
           </p>
         </div>
-      </section>
 
-      <WaveDivider fill="#FFFBF5" />
+        <WaveDivider fill="#FFFBF5" />
+      </section>
 
       {/* ══════════════════════════════════════════
           REGION CARDS

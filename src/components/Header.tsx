@@ -10,7 +10,6 @@ const NAV_LINKS = [
   { href: "/locations/sydney/cabbage-tree-bay", label: "Cabbage Tree Bay" },
   { href: "/locations/sydney/cabbage-tree-bay?tab=species", label: "All Species" },
   { href: "/id", label: "Identify" },
-  { href: "/locations/sydney/cabbage-tree-bay/community", label: "Community" },
 ];
 
 export default function Header() {

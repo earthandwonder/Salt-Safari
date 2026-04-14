@@ -63,6 +63,9 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+  .card-lift:active {
+    @apply scale-[0.97] duration-100;
+  }
   @media (hover: hover) {
     .card-lift:hover {
       @apply -translate-y-1.5;

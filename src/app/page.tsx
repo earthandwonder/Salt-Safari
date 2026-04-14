@@ -106,52 +106,74 @@ export default async function HomePage() {
     );
   }
 
-  // --- Parallel data fetches scoped to Cabbage Tree Bay ---
-  const [
-    { data: locationSpeciesData },
-    { data: seasonalityData },
-  ] = await Promise.all([
-    // All species at this location (published only, matching location page)
-    supabase
-      .from("location_species")
-      .select(`
-        id,
-        species_id,
-        is_spottable,
-        confidence,
-        total_observations,
-        species:species_id!inner (
-          id, name, scientific_name, slug, hero_image_url, is_charismatic, published
-        )
-      `)
-      .eq("location_id", ctbLocation.id)
-      .eq("species.published", true),
-
-    // Species in season this month
-    supabase
-      .from("species_seasonality")
-      .select(`
-        month,
-        likelihood,
-        location_species_id,
-        location_species:location_species_id (
+  // --- Fetch all location_species for CTB (paginated, matching location page) ---
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allLocationSpeciesRaw: any[] = [];
+  {
+    let from = 0;
+    const pageSize = 500;
+    let hasMore = true;
+    while (hasMore) {
+      const { data: batch } = await supabase
+        .from("location_species")
+        .select(`
           id,
           species_id,
-          location_id,
-          species:species_id (
-            id, name, scientific_name, slug, hero_image_url, is_charismatic
+          is_spottable,
+          confidence,
+          total_observations,
+          species:species_id!inner (
+            id, name, scientific_name, slug, hero_image_url, is_charismatic, published
           )
+        `)
+        .eq("location_id", ctbLocation.id)
+        .eq("species.published", true)
+        .range(from, from + pageSize - 1)
+        .order("total_observations", { ascending: false });
+
+      if (!batch || batch.length === 0) {
+        hasMore = false;
+      } else {
+        allLocationSpeciesRaw.push(...batch);
+        from += pageSize;
+        if (batch.length < pageSize) hasMore = false;
+      }
+    }
+  }
+
+  // Fetch seasonality data (separate query)
+  const { data: seasonalityData } = await supabase
+    .from("species_seasonality")
+    .select(`
+      month,
+      likelihood,
+      location_species_id,
+      location_species:location_species_id (
+        id,
+        species_id,
+        location_id,
+        species:species_id (
+          id, name, scientific_name, slug, hero_image_url, is_charismatic
         )
-      `)
-      .eq("month", currentMonth)
-      .in("likelihood", ["common", "occasional"]),
-  ]);
+      )
+    `)
+    .eq("month", currentMonth)
+    .in("likelihood", ["common", "occasional"]);
 
   // --- Species counts at CTB ---
+  // Deduplicate by species_id (keep row with most observations), matching location page logic
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allLS = (locationSpeciesData ?? []) as any[];
+  const dedupedMap = new Map<string, any>();
+  for (const ls of allLocationSpeciesRaw) {
+    const existing = dedupedMap.get(ls.species_id);
+    if (!existing || (ls.total_observations ?? 0) > (existing.total_observations ?? 0)) {
+      dedupedMap.set(ls.species_id, ls);
+    }
+  }
+  const allLS = Array.from(dedupedMap.values());
   const speciesCount = allLS.length;
-  const spottableCount = allLS.filter((ls) => ls.is_spottable).length;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const spottableCount = allLS.filter((ls: any) => ls.is_spottable).length;
 
   // --- Filter seasonality to CTB only ---
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

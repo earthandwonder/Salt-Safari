@@ -87,12 +87,12 @@ export function HomePageClient({
         {!heroImageUrl && <div className="caustic-overlay" />}
 
         <div className="relative z-10 max-w-7xl mx-auto w-full px-6 pb-28 md:pb-32 pt-32">
-          <p className="text-teal-300 font-display text-sm md:text-base tracking-widest uppercase mb-4 opacity-0 animate-fade-up font-medium drop-shadow-[0_0_4px_rgba(0,0,0,1)] drop-shadow-[0_0_10px_rgba(0,0,0,1)] drop-shadow-[0_0_20px_rgba(0,0,0,1)] drop-shadow-[0_0_60px_rgba(0,0,0,1)]">
-            Cabbage Tree Bay Aquatic Reserve
+          <p className="text-teal-300 font-display text-lg md:text-xl tracking-widest uppercase mb-4 opacity-0 animate-fade-up font-medium drop-shadow-[0_0_4px_rgba(0,0,0,1)] drop-shadow-[0_0_10px_rgba(0,0,0,1)] drop-shadow-[0_0_20px_rgba(0,0,0,1)] drop-shadow-[0_0_60px_rgba(0,0,0,1)]">
+            Cabbage Tree Bay
           </p>
 
           <h1 className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-white font-semibold leading-[1.05] tracking-tight mb-6 opacity-0 animate-fade-up stagger-1 text-balance drop-shadow-[0_4px_40px_rgba(0,0,0,1)] drop-shadow-[0_0_60px_rgba(0,0,0,0.7)]">
-            {speciesCount.toLocaleString()}+ species
+            {(Math.round(speciesCount / 1000) * 1000).toLocaleString()}+ species
             <br />
             call this place home.
           </h1>
@@ -123,7 +123,7 @@ export function HomePageClient({
                   </span>
                 </div>
                 <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight">
-                  Visiting this month? Look out for these.
+                  Swimming this month? Look out for these visitors.
                 </h2>
               </div>
             </div>
@@ -180,7 +180,7 @@ export function HomePageClient({
             <div className="mt-8 bg-deep/5 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <p className="font-display text-lg font-semibold text-deep">
-                  Got a species you&apos;re excited about?
+                  Is there a species you&apos;re excited to see?
                 </p>
                 <p className="text-sm text-slate-500 mt-1">
                   We&apos;ll alert you when they&apos;re in town
@@ -204,10 +204,10 @@ export function HomePageClient({
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-10">
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-3">
-              Your underwater collection
+              Your underwater gallery
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed">
-              We&apos;ve picked {spottableCount} species you might spot on a swim. Every visit is a chance to add to your collection — how many can you check off?
+              We&apos;ve picked {spottableCount} species you might find at Cabbage Tree Bay. How many can you spot?
             </p>
           </div>
 
@@ -308,10 +308,10 @@ export function HomePageClient({
           {/* Trip logging intro */}
           <div className="mt-16 max-w-2xl mx-auto text-center mb-8">
             <h3 className="font-display text-2xl md:text-3xl font-semibold text-deep tracking-tight mb-3">
-              Remember what you saw.
+              Log your adventures
             </h3>
             <p className="text-slate-500 text-lg leading-relaxed">
-              Log your sightings after each swim and we&apos;ll build you a swim report you can share with your swim group.
+              Log your sightings after each swim and we&apos;ll build you a swim card you can share with your swim group.
             </p>
           </div>
 
@@ -773,7 +773,7 @@ export function HomePageClient({
             {/* Copy */}
             <div>
               <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-4">
-                Know before you go
+                About the reserve
               </h2>
               <p className="text-slate-600 text-lg leading-relaxed mb-6">
                 Cabbage Tree Bay Aquatic Reserve is a fully protected no-take

@@ -1036,3 +1036,135 @@
 
 ### Deviations
 - None.
+
+---
+
+## Session 20 — Design Polish & Adjustments Implementation
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+#### Implemented `docs/24-adjustments.md` — major feature batch
+
+##### Bottom navigation bar (new)
+- **New component:** `src/components/BottomNav.tsx`
+  - Sticky app-style footer nav with icon buttons: Home, Species, Log (center FAB), Alerts, Profile.
+  - Auth-aware — shows login link when logged out, username when logged in.
+  - Hidden on login/signup pages.
+  - Active state detection via pathname matching.
+  - Center "Log" button styled as raised circular FAB with coral background.
+
+##### Community sightings pages (new)
+- **Calendar page:** `src/app/locations/[region]/[site]/community/page.tsx` + `CommunityCalendarClient.tsx`
+  - Browse what everyone spotted at a location by date.
+  - Monthly calendar grid with dot indicators for days with sightings.
+  - Lists recent community sighting days with species counts and participant counts.
+- **Day detail page:** `src/app/locations/[region]/[site]/community/[date]/page.tsx` + `CommunityDayClient.tsx`
+  - Shows all species spotted by all users at a location on a specific day.
+  - Individual swimmer cards with their sightings.
+  - "See what everyone saw" linked from trip pages.
+
+##### Spotter tier system (new)
+- **Tier logic:** `src/lib/spotter-tiers.ts`
+  - 8 tiers based on total species spotted: Landlubber (0) → Beachcomber (1-5) → Rockpool Ranger (6-15) → Reef Scout (16-30) → Current Rider (31-50) → Kelp Keeper (51-75) → Tide Master (76-100) → Sea Legend (101+).
+- **Badge component:** `src/components/SpotterTierBadge.tsx`
+  - Displays tier name with themed colour (slate → sky → teal → emerald → amber → purple → rose → yellow).
+  - Shows on profile pages and trip reports.
+
+##### Trips → Swims rename
+- **Moved:** `src/app/trips/` → `src/app/swims/`
+  - `[id]/page.tsx`, `[id]/TripPageClient.tsx`, `[id]/opengraph-image.tsx` all relocated.
+  - References updated throughout.
+
+##### Homepage updates
+- **`src/app/HomePageClient.tsx`:**
+  - Significant redesign with improved section structure.
+  - Community section added (later commented out in Session 21).
+  - Copy improvements throughout.
+- **`src/app/page.tsx`:**
+  - Layout adjustments for new homepage structure.
+
+##### Log page improvements
+- **`src/app/log/page.tsx`:**
+  - Enhanced trip card layout and styling.
+  - Improved visual hierarchy.
+
+##### Spotted tab enhancements
+- **`src/app/locations/[region]/[site]/SpottedTab.tsx`:**
+  - Major UI overhaul with improved search and filtering.
+
+##### LikelihoodPill — hide "common"
+- **`src/components/LikelihoodPill.tsx`:**
+  - "Common" likelihood pill no longer displayed (per feedback: "common" takes away from the magic).
+
+##### Other UI refinements
+- **`src/app/globals.css`:** New utility styles added.
+- **`src/components/Footer.tsx`:** Layout updates.
+- **`src/components/SpeciesCard.tsx`:** Card interaction polish.
+- **`src/app/u/[username]/ProfilePageClient.tsx`:** Profile page updates for spotter tiers.
+- **`src/app/login/page.tsx` / `src/app/signup/page.tsx`:** Minor copy tweaks.
+- **`src/app/species/SpeciesBrowseClient.tsx`:** Design consistency improvements.
+
+##### Documentation
+- **New:** `docs/24-adjustments.md` — User feedback and adjustment requests.
+- **New:** `docs/25-parallel-agent-prompts.md` — Implementation guidance for parallel agents.
+
+### Deviations
+- None.
+
+---
+
+## Session 21 — Navigation Rework, Copy Polish, Data Fixes
+**Date:** 2026-04-14
+**Status:** In progress (uncommitted changes)
+
+### What was built
+
+#### Bottom nav restructured
+- **`src/components/BottomNav.tsx`:**
+  - "Home" button → "All Species" (links to CTB species tab).
+  - "Species" button → "ID Tool" (links to `/id?location=cabbage-tree-bay`).
+  - "Log" button label → "Spot".
+  - Fish icon replaces home icon for All Species; magnifying glass icon for ID Tool.
+
+#### Header — removed community link
+- **`src/components/Header.tsx`:**
+  - Removed "Community" from desktop nav links.
+
+#### Homepage — commented out community section
+- **`src/app/HomePageClient.tsx`:**
+  - Community section commented out (not ready for launch).
+  - "Cabbage Tree Bay Aquatic Reserve" → "Cabbage Tree Bay" (shorter).
+  - Location name text size increased (`text-sm` → `text-lg`).
+  - Species count now rounds to nearest thousand (`speciesCount` → `Math.round(speciesCount / 1000) * 1000`).
+  - Copy tweaks throughout:
+    - "Visiting this month?" → "Swimming this month? Look out for these visitors."
+    - "Got a species you're excited about?" → "Is there a species you're excited to see?"
+    - "Your underwater collection" → "Your underwater gallery"
+    - Collection description simplified to focus on CTB specifically.
+    - "Remember what you saw." → "Log your adventures"
+    - "swim report" → "swim card"
+    - "Know before you go" → "About the reserve"
+
+#### Homepage data fetching — pagination + deduplication
+- **`src/app/page.tsx`:**
+  - Species query now paginates in batches of 500 (was single unbounded query) to handle large species counts.
+  - Added species deduplication by `species_id`, keeping the row with the most observations (matches location page logic).
+  - Seasonality query separated from species query (no longer `Promise.all`).
+
+#### Region page — in-season count fix
+- **`src/app/locations/[region]/RegionPageClient.tsx`:**
+  - In-season count now derived from `topSpecies.filter(sp => sp.isInSeason).length` instead of `Math.max` across locations (was inaccurate).
+  - Hero badge now shows actual count: "X in season now" instead of generic "Species in season now".
+
+#### Wave divider fix
+- **`src/app/alerts/page.tsx`** and **`src/app/locations/page.tsx`:**
+  - `WaveDivider` moved inside hero `<section>` to fix layout gap issues.
+
+#### Card interaction polish
+- **`src/app/globals.css`:**
+  - Added `.card-lift:active` scale-down effect (`scale-[0.97]`) for tactile mobile feedback.
+
+### Deviations
+- None.

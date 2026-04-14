@@ -55,31 +55,8 @@ export default function BottomNav() {
 
   const navItems: NavItem[] = [
     {
-      label: "Home",
-      href: "/",
-      matchPaths: ["/"],
-      icon: (active) => (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill={active ? "currentColor" : "none"}
-          stroke="currentColor"
-          strokeWidth={active ? 0 : 1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
-          {!active && <path d="M9 21V14h6v7" />}
-          {active && (
-            <rect x="9" y="13" width="6" height="8" rx="0.5" fill="#062133" />
-          )}
-        </svg>
-      ),
-    },
-    {
-      label: "Species",
-      href: "/species",
+      label: "All Species",
+      href: "/locations/sydney/cabbage-tree-bay?tab=species",
       matchPaths: ["/species"],
       icon: (active) => (
         <svg
@@ -99,7 +76,27 @@ export default function BottomNav() {
       ),
     },
     {
-      label: "Log",
+      label: "ID Tool",
+      href: "/id?location=cabbage-tree-bay",
+      matchPaths: ["/id"],
+      icon: (active) => (
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={active ? 2.2 : 1.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      ),
+    },
+    {
+      label: "Spot",
       href: "/locations/sydney/cabbage-tree-bay?tab=spotted",
       matchPaths: ["/spotted"],
       icon: () => (
@@ -182,7 +179,7 @@ export default function BottomNav() {
         <div className="flex items-end justify-around px-2 h-16">
           {navItems.map((item) => {
             const active = isActive(item);
-            const isLogButton = item.label === "Log";
+            const isLogButton = item.label === "Spot";
 
             if (isLogButton) {
               return (

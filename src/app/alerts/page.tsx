@@ -149,9 +149,9 @@ export default function AlertsPage() {
             Get notified when your favourite species come into season.
           </p>
         </div>
-      </section>
 
-      <WaveDivider fill="#FFFBF5" />
+        <WaveDivider fill="#FFFBF5" />
+      </section>
 
       {/* Content */}
       <section className="max-w-3xl mx-auto px-6 py-10 md:py-14">

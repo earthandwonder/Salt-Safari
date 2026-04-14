@@ -34,10 +34,7 @@ export function RegionPageClient({
 }: RegionPageClientProps) {
   const [activeTab, setActiveTab] = useState("locations");
 
-  const totalSpeciesInSeason = locations.reduce((sum, loc) => {
-    // Deduplicate would be ideal, but for display this is a rough total
-    return Math.max(sum, loc.inSeasonCount);
-  }, 0);
+  const totalSpeciesInSeason = topSpecies.filter((sp) => sp.isInSeason).length;
 
   return (
     <div className="min-h-screen bg-sand">
@@ -99,7 +96,7 @@ export function RegionPageClient({
             {totalSpeciesInSeason > 0 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 backdrop-blur-sm">
                 <span className="season-dot !w-1.5 !h-1.5" aria-hidden="true" />
-                Species in season now
+                {totalSpeciesInSeason} in season now
               </span>
             )}
           </div>
