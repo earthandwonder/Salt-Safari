@@ -14,6 +14,8 @@ interface SpeciesCardProps {
   isInSeason?: boolean;
   /** Whether the user has spotted this species. */
   isSpotted?: boolean;
+  /** Total quantity spotted (shows ×N badge when > 1). */
+  spottedCount?: number;
   className?: string;
 }
 
@@ -26,12 +28,13 @@ export function SpeciesCard({
   activeMonths = 12,
   isInSeason = false,
   isSpotted = false,
+  spottedCount,
   className = "",
 }: SpeciesCardProps) {
   return (
     <Link
       href={`/species/${slug}`}
-      className={`group block card-lift rounded-xl overflow-hidden bg-white shadow-sm border border-slate-100 ${className}`}
+      className={`group block card-lift rounded-xl overflow-hidden bg-white shadow-sm border border-slate-100 touch-action-manipulation ${className}`}
     >
       {/* Photo — 4:3 aspect ratio */}
       <div className="relative aspect-[4/3] overflow-hidden">
@@ -64,6 +67,13 @@ export function SpeciesCard({
               <polyline points="20 6 9 17 4 12" />
             </svg>
           </div>
+        )}
+
+        {/* Quantity badge */}
+        {spottedCount != null && spottedCount > 1 && (
+          <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-xs font-bold backdrop-blur-sm">
+            &times;{spottedCount}
+          </span>
         )}
 
         {/* Gradient overlay at bottom for text legibility */}

@@ -8,10 +8,12 @@ import { WaveDivider } from "@/components/WaveDivider";
 import { TabBar, TabPanel } from "@/components/TabBar";
 import { ResponsiveGrid } from "@/components/ResponsiveGrid";
 import { SpeciesCard } from "@/components/SpeciesCard";
+import { SpotterTierBadge } from "@/components/SpotterTierBadge";
+import { getSpotterTier } from "@/lib/spotter-tiers";
 import type { ProfileData, ProfileTrip } from "./page";
 
 const TABS = [
-  { id: "trips", label: "Trips" },
+  { id: "trips", label: "Swims" },
   { id: "spotted", label: "Spotted" },
 ];
 
@@ -41,6 +43,7 @@ function formatTripDate(dateStr: string): string {
 export function ProfilePageClient({ profile }: { profile: ProfileData }) {
   const [activeTab, setActiveTab] = useState("trips");
   const initials = getInitials(profile.displayName);
+  const spotterTier = getSpotterTier(profile.totalSpecies);
 
   return (
     <div className="min-h-screen bg-sand">
@@ -73,6 +76,11 @@ export function ProfilePageClient({ profile }: { profile: ProfileData }) {
             {formatJoinDate(profile.joinDate)}
           </p>
 
+          {/* Spotter tier */}
+          <div className="mt-3">
+            <SpotterTierBadge tier={spotterTier} variant="dark" />
+          </div>
+
           {/* Stats row */}
           <div className="flex items-center gap-4 mt-6">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm">
@@ -91,7 +99,7 @@ export function ProfilePageClient({ profile }: { profile: ProfileData }) {
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
               <span className="text-sm font-medium text-white">
-                {profile.totalTrips} <span className="text-white/60">trip{profile.totalTrips !== 1 ? "s" : ""}</span>
+                {profile.totalTrips} <span className="text-white/60">swim{profile.totalTrips !== 1 ? "s" : ""}</span>
               </span>
             </div>
           </div>
@@ -141,6 +149,7 @@ export function ProfilePageClient({ profile }: { profile: ProfileData }) {
                       heroImageUrl={sp.heroImageUrl}
                       likelihood="common"
                       isSpotted
+                      spottedCount={sp.totalQuantity}
                     />
                   ))}
                 </ResponsiveGrid>
@@ -159,7 +168,7 @@ export function ProfilePageClient({ profile }: { profile: ProfileData }) {
 function TripCard({ trip }: { trip: ProfileTrip }) {
   const speciesCount = trip.sightings.length;
   const locationHref = `/locations/${trip.regionSlug}/${trip.locationSlug}`;
-  const tripHref = `/trips/${trip.tripId}`;
+  const tripHref = `/swims/${trip.tripId}`;
 
   // Overlapping thumbnail stack (up to 5)
   const thumbs = trip.sightings.slice(0, 5);
@@ -258,9 +267,9 @@ function EmptyTrips() {
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
       </div>
-      <h3 className="font-display text-lg font-semibold text-deep mb-1.5">No trips yet</h3>
+      <h3 className="font-display text-lg font-semibold text-deep mb-1.5">No swims yet</h3>
       <p className="text-sm text-slate-400 max-w-xs mx-auto">
-        This diver hasn&apos;t logged any sightings yet. Trips appear here once species are spotted at a dive site.
+        This diver hasn&apos;t logged any sightings yet. Swims appear here once species are spotted at a dive site.
       </p>
     </div>
   );

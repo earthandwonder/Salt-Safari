@@ -132,7 +132,7 @@ export function SpottedTab({
                   href="/log"
                   className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-teal-600 transition-colors"
                 >
-                  View all your sightings
+                  View your swim log
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>

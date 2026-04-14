@@ -60,12 +60,20 @@
      ======================================== */
   .card-lift {
     @apply transition-[transform,box-shadow] duration-300 ease-out;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
-  .card-lift:hover {
-    @apply -translate-y-1.5;
-    box-shadow:
-      0 10px 25px -5px rgba(20, 184, 166, 0.08),
-      0 8px 10px -6px rgba(6, 33, 51, 0.06);
+  @media (hover: hover) {
+    .card-lift:hover {
+      @apply -translate-y-1.5;
+      box-shadow:
+        0 10px 25px -5px rgba(20, 184, 166, 0.08),
+        0 8px 10px -6px rgba(6, 33, 51, 0.06);
+    }
+  }
+
+  .touch-action-manipulation {
+    touch-action: manipulation;
   }
 
   /* ========================================

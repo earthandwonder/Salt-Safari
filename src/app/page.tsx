@@ -21,6 +21,14 @@ type CollectionPreviewSpecies = {
   revealed: boolean;
 };
 
+type DiscoverSpecies = {
+  id: string;
+  slug: string;
+  commonName: string;
+  scientificName: string | null;
+  heroImageUrl: string | null;
+};
+
 /**
  * Deterministic daily shuffle — same order all day, different tomorrow.
  * Preserves CDN/ISR caching.
@@ -93,6 +101,7 @@ export default async function HomePage() {
         inSeasonCount={0}
         inSeasonSpecies={[]}
         collectionPreviewSpecies={[]}
+        discoverSpecies={[]}
       />
     );
   }
@@ -266,6 +275,20 @@ export default async function HomePage() {
     }
   }
 
+  // --- Build Discover Species list (3 random spottable species with photos) ---
+  const spottableWithPhotos = allLS.filter(
+    (ls) => ls.is_spottable && ls.species?.hero_image_url && ls.species?.slug
+  );
+  const discoverSpecies: DiscoverSpecies[] = dailySeedShuffle(spottableWithPhotos)
+    .slice(0, 3)
+    .map((ls) => ({
+      id: ls.species.id,
+      slug: ls.species.slug,
+      commonName: ls.species.name,
+      scientificName: ls.species.scientific_name,
+      heroImageUrl: ls.species.hero_image_url,
+    }));
+
   // --- Build collection preview species (12 spottable species, some "revealed") ---
   const spottableSpecies = allLS.filter(
     (ls) => ls.is_spottable && ls.species?.hero_image_url
@@ -311,6 +334,7 @@ export default async function HomePage() {
       inSeasonCount={inSeasonSpecies.length}
       inSeasonSpecies={sortedInSeason}
       collectionPreviewSpecies={collectionPreviewSpecies}
+      discoverSpecies={discoverSpecies}
       userSpottedCount={userSpottedCount}
       userLatestLog={userLatestLog}
       isLoggedIn={isLoggedIn}

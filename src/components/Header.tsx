@@ -7,9 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const NAV_LINKS = [
-  { href: "/locations", label: "Locations" },
-  { href: "/species", label: "Species" },
+  { href: "/locations/sydney/cabbage-tree-bay", label: "Cabbage Tree Bay" },
+  { href: "/locations/sydney/cabbage-tree-bay?tab=species", label: "All Species" },
   { href: "/id", label: "Identify" },
+  { href: "/locations/sydney/cabbage-tree-bay/community", label: "Community" },
 ];
 
 export default function Header() {
@@ -137,7 +138,7 @@ export default function Header() {
                 href="/log"
                 className="text-white/70 hover:text-white text-sm transition-colors"
               >
-                My Log
+                My Swim Log
               </Link>
               {user ? (
                 <div className="flex items-center gap-4">
@@ -184,9 +185,20 @@ export default function Header() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
+        {/* Mobile alerts + hamburger */}
+        <div className="md:hidden flex items-center gap-3">
+        <Link
+          href="/alerts"
+          className="relative w-8 h-8 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+          aria-label="Alerts"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </Link>
         <button
-          className="md:hidden relative w-8 h-8 flex items-center justify-center"
+          className="relative w-8 h-8 flex items-center justify-center"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}
         >
@@ -206,6 +218,7 @@ export default function Header() {
             }`}
           />
         </button>
+        </div>
       </nav>
 
       {/* Mobile menu */}
@@ -233,7 +246,7 @@ export default function Header() {
                 className="block py-3 text-white/80 hover:text-white text-lg border-b border-white/10"
                 onClick={() => setMenuOpen(false)}
               >
-                My Log
+                My Swim Log
               </Link>
               {user ? (
                 <>

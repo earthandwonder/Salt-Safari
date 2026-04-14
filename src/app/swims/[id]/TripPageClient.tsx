@@ -6,8 +6,9 @@ import { motion } from "motion/react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WaveDivider } from "@/components/WaveDivider";
-import { ResponsiveGrid } from "@/components/ResponsiveGrid";
 import { LikelihoodPill } from "@/components/LikelihoodPill";
+import { SpotterTierBadge } from "@/components/SpotterTierBadge";
+import { getSpotterTier } from "@/lib/spotter-tiers";
 import type { TripData } from "./page";
 
 function formatDate(dateStr: string): string {
@@ -53,7 +54,7 @@ export function TripPageClient({ trip }: { trip: TripData }) {
   const handleShare = useCallback(async () => {
     const shareData = {
       title: `${trip.displayName} saw ${speciesCount} species at ${trip.locationName}`,
-      text: `Check out this trip report — ${speciesCount} species spotted at ${trip.locationName}!`,
+      text: `Check out this swim report — ${speciesCount} species spotted at ${trip.locationName}!`,
       url: shareUrl,
     };
 
@@ -193,6 +194,16 @@ export function TripPageClient({ trip }: { trip: TripData }) {
             </motion.div>
           )}
 
+          {/* Spotter tier */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.55 }}
+            className="mt-4 flex justify-center"
+          >
+            <SpotterTierBadge tier={getSpotterTier(trip.totalUserSpecies)} variant="dark" />
+          </motion.div>
+
           {/* CTA row */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -211,7 +222,7 @@ export function TripPageClient({ trip }: { trip: TripData }) {
                 <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                 <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
               </svg>
-              Share trip
+              Share swim
             </button>
           </motion.div>
         </div>
@@ -222,9 +233,9 @@ export function TripPageClient({ trip }: { trip: TripData }) {
       {/* ══════════════════════════════════════════
           SPECIES GRID
          ══════════════════════════════════════════ */}
-      <div className="max-w-5xl mx-auto px-6 py-10 md:py-14">
-        {trip.username && (
-          <div className="mb-8 flex items-center gap-3">
+      <div className="max-w-4xl mx-auto px-6 py-10 md:py-14">
+        <div className="mb-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+          {trip.username && (
             <Link
               href={`/u/${trip.username}`}
               className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
@@ -235,27 +246,39 @@ export function TripPageClient({ trip }: { trip: TripData }) {
               </svg>
               View {trip.displayName}&apos;s profile
             </Link>
-          </div>
-        )}
+          )}
+          <Link
+            href={`/locations/${trip.regionSlug}/${trip.locationSlug}/community/${trip.date}`}
+            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-teal-600 font-medium transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 00-3-3.87" />
+              <path d="M16 3.13a4 4 0 010 7.75" />
+            </svg>
+            See what everyone saw
+          </Link>
+        </div>
 
-        <ResponsiveGrid columns={{ mobile: 2, tablet: 3, desktop: 4 }}>
+        <div className="space-y-4">
           {trip.sightings.map((s, i) => (
             <motion.div
               key={s.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: Math.min(i * 0.05, 0.8) }}
+              transition={{ duration: 0.4, delay: Math.min(i * 0.06, 0.7) }}
             >
-              <SightingCard sighting={s} />
+              <SightingRow sighting={s} />
             </motion.div>
           ))}
-        </ResponsiveGrid>
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════
           MOBILE SHARE FAB
          ══════════════════════════════════════════ */}
-      <div className="md:hidden fixed bottom-6 right-6 z-40">
+      <div className="md:hidden fixed bottom-24 right-5 z-[110]">
         <button
           onClick={handleShare}
           className="flex items-center gap-2 px-5 py-3 rounded-full bg-coral hover:bg-coral-dark text-white text-sm font-semibold shadow-lg shadow-coral/30 transition-colors"
@@ -292,8 +315,8 @@ export function TripPageClient({ trip }: { trip: TripData }) {
   );
 }
 
-// ─── Sighting Card ─────────────────────────────────────────────────
-function SightingCard({
+// ─── Sighting Row ─────────────────────────────────────────────────
+function SightingRow({
   sighting,
 }: {
   sighting: {
@@ -310,52 +333,61 @@ function SightingCard({
   return (
     <Link
       href={`/species/${sighting.speciesSlug}`}
-      className="group block rounded-xl overflow-hidden bg-white shadow-sm border border-slate-100 card-lift"
+      className="group/row block rounded-xl overflow-hidden bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all"
     >
-      {/* Photo */}
-      <div className="relative aspect-[4/3] overflow-hidden">
-        {sighting.heroImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={sighting.heroImageUrl}
-            alt={sighting.speciesName}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full photo-placeholder-species" />
-        )}
+      {/* Mobile/tablet: stacked — Desktop: side-by-side */}
+      <div className="lg:flex">
+        {/* Image — full-width on mobile, fixed width on desktop */}
+        <div className="relative aspect-[16/10] lg:aspect-auto lg:w-72 lg:shrink-0 overflow-hidden">
+          {sighting.heroImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={sighting.heroImageUrl}
+              alt={sighting.speciesName}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover/row:scale-[1.03]"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full photo-placeholder-species" />
+          )}
 
-        {/* Quantity badge */}
-        {sighting.quantity > 1 && (
-          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-deep/80 backdrop-blur-sm text-white text-xs font-bold">
-            {sighting.quantity}x
+          {/* Quantity badge */}
+          {sighting.quantity > 1 && (
+            <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 text-white text-xs font-bold backdrop-blur-sm">
+              {sighting.quantity}&times; spotted
+            </span>
+          )}
+
+          {/* Bottom gradient for text readability on mobile */}
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent lg:hidden" />
+        </div>
+
+        {/* Details */}
+        <div className="p-4 md:p-5 lg:p-6 lg:flex-1 lg:flex lg:flex-col lg:justify-center min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="font-display text-lg md:text-xl font-semibold text-deep group-hover/row:text-teal-700 transition-colors leading-tight">
+                {sighting.speciesName}
+              </h3>
+              {sighting.scientificName && (
+                <p className="text-sm text-slate-400 italic mt-0.5 truncate">
+                  {sighting.scientificName}
+                </p>
+              )}
+            </div>
+            {sighting.likelihood && (
+              <div className="shrink-0 mt-0.5">
+                <LikelihoodPill likelihood={sighting.likelihood} />
+              </div>
+            )}
           </div>
-        )}
 
-        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/20 to-transparent" />
-      </div>
-
-      {/* Card body */}
-      <div className="p-3 md:p-4">
-        <h3 className="font-display text-sm md:text-base font-semibold text-deep leading-tight truncate">
-          {sighting.speciesName}
-        </h3>
-        {sighting.scientificName && (
-          <p className="text-xs text-slate-400 italic mt-0.5 truncate">
-            {sighting.scientificName}
-          </p>
-        )}
-        {sighting.likelihood && (
-          <div className="mt-1.5">
-            <LikelihoodPill likelihood={sighting.likelihood} />
-          </div>
-        )}
-        {sighting.notes && (
-          <p className="text-xs text-slate-400 mt-1.5 line-clamp-2">
-            &ldquo;{sighting.notes}&rdquo;
-          </p>
-        )}
+          {sighting.notes && (
+            <p className="text-sm text-slate-500 mt-3 leading-relaxed line-clamp-3">
+              &ldquo;{sighting.notes}&rdquo;
+            </p>
+          )}
+        </div>
       </div>
     </Link>
   );

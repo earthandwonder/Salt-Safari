@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { LikelihoodPill } from "@/components/LikelihoodPill";
+import { SpotterTierBadge } from "@/components/SpotterTierBadge";
+import { getSpotterTier } from "@/lib/spotter-tiers";
 
 type SightingWithDetails = {
   id: string;
@@ -209,10 +211,6 @@ export default function SightingLogPage() {
     load();
   }, [router]);
 
-  const totalSightings = useMemo(
-    () => trips.reduce((sum, t) => sum + t.sightings.length, 0),
-    [trips]
-  );
 
   if (!authChecked && loading) {
     return (
@@ -241,14 +239,7 @@ export default function SightingLogPage() {
             Your Swim Log
           </h1>
           {!loading && trips.length > 0 && (
-            <div className="flex flex-wrap items-center gap-4 mt-5">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-white/10 text-white/80 backdrop-blur-sm">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                {totalSightings} sighting{totalSightings !== 1 ? "s" : ""}
-              </span>
+            <div className="flex flex-wrap items-center gap-3 mt-5">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 backdrop-blur-sm">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
@@ -262,8 +253,9 @@ export default function SightingLogPage() {
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
-                {trips.length} trip{trips.length !== 1 ? "s" : ""}
+                {trips.length} swim{trips.length !== 1 ? "s" : ""}
               </span>
+              <SpotterTierBadge tier={getSpotterTier(totalSpeciesCount)} variant="dark" />
             </div>
           )}
         </div>
@@ -332,7 +324,7 @@ function TripCard({ trip, userId }: { trip: Trip; userId: string | null }) {
   const formattedDate = formatDate(trip.date);
   const speciesCount = trip.sightings.length;
   const locationHref = `/locations/${trip.regionSlug}/${trip.locationSlug}`;
-  const tripHref = userId ? `/trips/${userId}-${trip.locationSlug}-${trip.date}` : null;
+  const tripHref = userId ? `/swims/${userId}-${trip.locationSlug}-${trip.date}` : null;
 
   return (
     <div className="rounded-xl bg-white border border-slate-100 p-5 md:p-6 hover:border-slate-200 transition-colors">
@@ -416,20 +408,19 @@ function TripCard({ trip, userId }: { trip: Trip; userId: string | null }) {
         ))}
       </div>
 
-      {/* Trip detail link */}
+      {/* Swim detail link */}
       {tripHref && (
-        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3">
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
           <Link
             href={tripHref}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors"
           >
-            View trip report
+            View shareable report
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
           </Link>
-          <span className="text-slate-200">|</span>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -443,7 +434,7 @@ function TripCard({ trip, userId }: { trip: Trip; userId: string | null }) {
                 navigator.clipboard.writeText(url).catch(() => {});
               }
             }}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-teal-600 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-slate-500 bg-slate-50 hover:bg-slate-100 hover:text-teal-600 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="18" cy="5" r="3" />

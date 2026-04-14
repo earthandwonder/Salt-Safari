@@ -27,6 +27,8 @@ const config: Record<Likelihood, { label: string; bg: string; text: string; dot:
 };
 
 export function LikelihoodPill({ likelihood, className = "" }: LikelihoodPillProps) {
+  if (likelihood === "common") return null;
+
   const c = config[likelihood];
 
   return (

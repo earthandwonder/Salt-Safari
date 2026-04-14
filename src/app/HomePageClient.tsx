@@ -23,6 +23,14 @@ type CollectionPreviewSpecies = {
   revealed: boolean;
 };
 
+type DiscoverSpecies = {
+  id: string;
+  slug: string;
+  commonName: string;
+  scientificName: string | null;
+  heroImageUrl: string | null;
+};
+
 type UserLatestLog = {
   speciesCount: number;
   locationName: string;
@@ -36,6 +44,7 @@ interface HomePageClientProps {
   inSeasonCount: number;
   inSeasonSpecies: InSeasonSpecies[];
   collectionPreviewSpecies: CollectionPreviewSpecies[];
+  discoverSpecies: DiscoverSpecies[];
   userSpottedCount?: number;
   userLatestLog?: UserLatestLog | null;
   isLoggedIn?: boolean;
@@ -48,6 +57,7 @@ export function HomePageClient({
   inSeasonCount,
   inSeasonSpecies,
   collectionPreviewSpecies,
+  discoverSpecies,
   userSpottedCount,
   userLatestLog,
   isLoggedIn,
@@ -173,7 +183,7 @@ export function HomePageClient({
                   Got a species you&apos;re excited about?
                 </p>
                 <p className="text-sm text-slate-500 mt-1">
-                  We&apos;ll tell you when they&apos;re in town
+                  We&apos;ll alert you when they&apos;re in town
                 </p>
               </div>
               <Link
@@ -194,11 +204,10 @@ export function HomePageClient({
         <div className="max-w-7xl mx-auto">
           <div className="max-w-2xl mb-10">
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-3">
-              How many can you find?
+              Your underwater collection
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed">
-              Every species you spot adds to your collection. Track your
-              progress across visits.
+              We&apos;ve picked {spottableCount} species you might spot on a swim. Every visit is a chance to add to your collection — how many can you check off?
             </p>
           </div>
 
@@ -212,10 +221,10 @@ export function HomePageClient({
                 of {spottableCount.toLocaleString()} spotted
               </p>
               <Link
-                href={isLoggedIn ? "/log" : "/signup"}
+                href="/locations/sydney/cabbage-tree-bay"
                 className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
               >
-                Log a sighting
+                Start spotting
               </Link>
             </div>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -273,13 +282,13 @@ export function HomePageClient({
             ))}
           </div>
 
-          {/* Log a sighting CTA */}
+          {/* Start spotting CTA */}
           <div className="mt-8 flex justify-center">
             <Link
-              href={isLoggedIn ? "/log" : "/signup"}
+              href="/locations/sydney/cabbage-tree-bay"
               className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
             >
-              Log a sighting
+              Start spotting
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -302,7 +311,7 @@ export function HomePageClient({
               Remember what you saw.
             </h3>
             <p className="text-slate-500 text-lg leading-relaxed">
-              Log your sightings after each swim and we&apos;ll build you a trip report you can share with your swim group.
+              Log your sightings after each swim and we&apos;ll build you a swim report you can share with your swim group.
             </p>
           </div>
 
@@ -310,7 +319,7 @@ export function HomePageClient({
           <div className="max-w-sm mx-auto">
             <div className="bg-deep rounded-2xl p-5 md:p-6 shadow-xl shadow-deep/20">
               <p className="text-white/40 text-xs tracking-wider uppercase mb-3">
-                {isLoggedIn && userLatestLog ? "Your latest trip" : "Shareable trip report"}
+                {isLoggedIn && userLatestLog ? "Your latest swim" : "Shareable swim report"}
               </p>
               <p className="font-display text-lg font-semibold text-white mb-1">
                 {isLoggedIn && userLatestLog
@@ -392,7 +401,7 @@ export function HomePageClient({
             {/* Share your swim button */}
             <div className="mt-5 flex justify-center">
               <Link
-                href={isLoggedIn ? "/log" : "/signup"}
+                href={isLoggedIn ? "/log" : "/signup?redirectTo=%2Flog"}
                 className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
               >
                 Share your swim
@@ -541,9 +550,6 @@ export function HomePageClient({
 
           {/* Text */}
           <div className="order-1 md:order-2">
-            <p className="text-teal-600 text-sm font-medium tracking-wider uppercase mb-3">
-              Free to use
-            </p>
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-4 text-balance">
               Saw something different?
               <br />
@@ -554,30 +560,6 @@ export function HomePageClient({
               where — and we&apos;ll match it against every species recorded
               at Cabbage Tree Bay.
             </p>
-            <ul className="space-y-3 mb-8">
-              {[
-                "Works for snorkellers, not just divers",
-                "No account needed — completely free",
-                "Based on real observation data, not guesswork",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3">
-                  <svg
-                    className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span className="text-slate-600">{item}</span>
-                </li>
-              ))}
-            </ul>
             <Link
               href="/id?location=cabbage-tree-bay"
               className="inline-flex items-center gap-2 bg-deep hover:bg-deep-light text-white px-6 py-3 rounded-full font-medium transition-colors"
@@ -602,6 +584,190 @@ export function HomePageClient({
       </section>
 
       {/* ──────────────────────────────────────────
+          DISCOVER SPECIES — Deep Dives
+          ────────────────────────────────────────── */}
+      {discoverSpecies.length > 0 && (
+        <section className="bg-white section-padding">
+          <div className="max-w-7xl mx-auto">
+            <div className="max-w-2xl mb-10">
+              <p className="text-teal-600 text-sm font-medium tracking-wider uppercase mb-3">
+                Deep Dives
+              </p>
+              <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-3">
+                Get to know the locals
+              </h2>
+              <p className="text-slate-500 text-lg leading-relaxed">
+                Every species has a story — what they eat, where they hide,
+                why they&apos;re here. Dive into the field guide.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 md:gap-6">
+              {discoverSpecies.map((species) => (
+                <Link
+                  key={species.id}
+                  href={`/species/${species.slug}`}
+                  className="group"
+                >
+                  <div className="card-lift rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100">
+                    <div className="aspect-[4/3] relative overflow-hidden">
+                      {species.heroImageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={species.heroImageUrl}
+                          alt={species.commonName}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full photo-placeholder-species" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-display text-base font-semibold text-deep group-hover:text-teal-700 transition-colors truncate">
+                        {species.commonName}
+                      </h3>
+                      {species.scientificName && (
+                        <p className="text-xs text-slate-400 italic mt-1 truncate">
+                          {species.scientificName}
+                        </p>
+                      )}
+                      <p className="text-xs text-coral font-medium mt-2 flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Learn more
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ──────────────────────────────────────────
+          COMMUNITY — Who's been swimming?
+          ────────────────────────────────────────── */}
+      <section className="bg-sand section-padding overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+            {/* Text */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse-soft" />
+                <span className="text-teal-600 text-sm font-medium tracking-wider uppercase">
+                  Community
+                </span>
+              </div>
+              <h2 className="font-display text-3xl md:text-4xl font-semibold text-deep tracking-tight mb-4 text-balance">
+                Follow the community&apos;s sightings
+              </h2>
+              <p className="text-slate-500 text-lg leading-relaxed mb-6">
+                We know what species live here — the community shows you
+                who spotted what and when. See what swimmers are logging
+                after each visit and discover what&apos;s being seen right now.
+              </p>
+              <Link
+                href="/locations/sydney/cabbage-tree-bay/community"
+                className="inline-flex items-center gap-2 bg-deep hover:bg-deep-light text-white px-6 py-3 rounded-full font-medium transition-colors"
+              >
+                See the community
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Visual card — recent swimmer activity feed */}
+            <div className="relative">
+              <Link
+                href="/locations/sydney/cabbage-tree-bay/community"
+                className="block group"
+              >
+                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden card-lift">
+                  {/* Card header */}
+                  <div className="bg-deep px-6 py-5">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-teal-300 text-xs font-medium tracking-wider uppercase">
+                        Cabbage Tree Bay
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-soft" />
+                        <span className="text-emerald-400 text-xs font-medium">Live</span>
+                      </div>
+                    </div>
+                    <p className="text-white font-display text-lg font-semibold">
+                      Who spotted what
+                    </p>
+                  </div>
+
+                  {/* Simulated activity feed */}
+                  <div className="divide-y divide-slate-100">
+                    {[
+                      { initials: "KM", name: "Kate M.", species: 12, time: "Today", color: "bg-teal-500" },
+                      { initials: "JR", name: "James R.", species: 8, time: "Today", color: "bg-coral" },
+                      { initials: "SL", name: "Sarah L.", species: 15, time: "Yesterday", color: "bg-indigo-500" },
+                      { initials: "DP", name: "Dan P.", species: 6, time: "2 days ago", color: "bg-amber-500" },
+                    ].map((swimmer) => (
+                      <div key={swimmer.name} className="flex items-center gap-3 px-5 py-3.5">
+                        <div className={`w-9 h-9 rounded-full ${swimmer.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                          {swimmer.initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-deep truncate">
+                            {swimmer.name}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            logged {swimmer.species} species
+                          </p>
+                        </div>
+                        <span className="text-xs text-slate-400 shrink-0">
+                          {swimmer.time}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between px-5 py-3.5 bg-slate-50/80">
+                    <p className="text-sm text-slate-500">
+                      See all community activity
+                    </p>
+                    <svg
+                      className="w-4 h-4 text-slate-400 group-hover:text-teal-500 transition-colors"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────────────────────────────────
           THE RESERVE — Know Before You Go
           ────────────────────────────────────────── */}
       <section className="bg-sand section-padding">
@@ -619,9 +785,9 @@ export function HomePageClient({
                 hover in the shallows, and sea turtles feast on the sea grass.
               </p>
               <p className="text-slate-500 leading-relaxed mb-8">
-                Shore access from Shelly Beach makes it one of the most
-                accessible snorkelling spots in Australia. Walk in off the
-                sand and you&apos;re surrounded by hundreds of species within
+                An entry from South Manly makes it one of Sydney&apos;s most
+                popular swim spots. Walk in off the sand at Shelly Beach
+                and you&apos;re surrounded by hundreds of species within
                 minutes.
               </p>
 
@@ -683,25 +849,6 @@ export function HomePageClient({
                 </div>
               </div>
 
-              <Link
-                href="/locations/sydney/cabbage-tree-bay"
-                className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium transition-colors"
-              >
-                Plan your visit
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M14 5l7 7m0 0l-7 7m7-7H3"
-                  />
-                </svg>
-              </Link>
             </div>
 
             {/* Map placeholder */}

@@ -27,6 +27,7 @@ export type TripData = {
   date: string;
   sightings: TripSighting[];
   totalSpeciesAtLocation: number;
+  totalUserSpecies: number;
 };
 
 // ─── Trip ID parsing ─────────────────────────────────────────────
@@ -160,7 +161,16 @@ async function getTripData(tripId: string): Promise<TripData | null> {
     .eq("is_spottable", true)
     .eq("species.published", true);
 
-  // 8. Build sightings list
+  // 8. Count user's total unique species (for spotter tier)
+  const { data: allUserSightings } = await supabase
+    .from("sightings")
+    .select("species_id")
+    .eq("user_id", parsed.userId);
+  const totalUserSpecies = allUserSightings
+    ? new Set(allUserSightings.map((s) => s.species_id)).size
+    : 0;
+
+  // 9. Build sightings list
   const tripSightings: TripSighting[] = sightings.map((s) => {
     const sp = speciesMap.get(s.species_id);
     return {
@@ -187,6 +197,7 @@ async function getTripData(tripId: string): Promise<TripData | null> {
     date: parsed.date,
     sightings: tripSightings,
     totalSpeciesAtLocation: totalSpeciesAtLocation ?? 0,
+    totalUserSpecies,
   };
 }
 
@@ -198,10 +209,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const trip = await getTripData(id);
 
   if (!trip) {
-    return { title: "Trip not found — Salt Safari" };
+    return { title: "Swim not found — Salt Safari" };
   }
 
-  const description = `${trip.displayName} saw ${trip.sightings.length} species at ${trip.locationName} on ${formatDateForMeta(trip.date)}. See the full trip report on Salt Safari.`;
+  const description = `${trip.displayName} saw ${trip.sightings.length} species at ${trip.locationName} on ${formatDateForMeta(trip.date)}. See the full swim report on Salt Safari.`;
 
   return {
     title: `${trip.displayName} saw ${trip.sightings.length} species at ${trip.locationName} — Salt Safari`,
@@ -210,7 +221,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${trip.displayName} saw ${trip.sightings.length} species at ${trip.locationName}`,
       description,
       type: "article",
-      url: `/trips/${trip.tripId}`,
+      url: `/swims/${trip.tripId}`,
     },
   };
 }

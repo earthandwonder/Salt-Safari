@@ -28,6 +28,7 @@ export type SpottedSpecies = {
   scientificName: string | null;
   heroImageUrl: string | null;
   isCherismatic: boolean;
+  totalQuantity: number;
 };
 
 export type ProfileData = {
@@ -163,6 +164,12 @@ async function getProfileData(username: string): Promise<ProfileData | null> {
   }
 
   // 7. Unique species list sorted: charismatic first, then alphabetical
+  // Compute total quantity per species across all sightings
+  const quantityBySpecies = new Map<string, number>();
+  for (const s of sightings) {
+    quantityBySpecies.set(s.species_id, (quantityBySpecies.get(s.species_id) ?? 0) + s.quantity);
+  }
+
   const seenSpecies = new Set<string>();
   const spottedSpecies: SpottedSpecies[] = [];
   for (const spId of speciesIds) {
@@ -176,6 +183,7 @@ async function getProfileData(username: string): Promise<ProfileData | null> {
         scientificName: sp.scientific_name,
         heroImageUrl: sp.hero_image_url,
         isCherismatic: sp.is_charismatic,
+        totalQuantity: quantityBySpecies.get(spId) ?? 1,
       });
     }
   }
@@ -210,7 +218,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "User not found — Salt Safari" };
   }
 
-  const description = `${profile.displayName} has spotted ${profile.totalSpecies} marine species across ${profile.totalTrips} trips. View their dive CV on Salt Safari.`;
+  const description = `${profile.displayName} has spotted ${profile.totalSpecies} marine species across ${profile.totalTrips} swims. View their dive CV on Salt Safari.`;
 
   return {
     title: `${profile.displayName} (@${profile.username}) — Salt Safari`,

@@ -46,13 +46,8 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <Link href="/locations" className="text-sm hover:text-teal-300 transition-colors">
-                  Locations
-                </Link>
-              </li>
-              <li>
-                <Link href="/species" className="text-sm hover:text-teal-300 transition-colors">
-                  Species
+                <Link href="/locations/sydney/cabbage-tree-bay?tab=species" className="text-sm hover:text-teal-300 transition-colors">
+                  All Species
                 </Link>
               </li>
               <li>
@@ -60,23 +55,19 @@ export function Footer() {
                   Species ID Tool
                 </Link>
               </li>
-            </ul>
-          </div>
-
-          {/* Account */}
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">
-              Account
-            </h4>
-            <ul className="space-y-2.5">
               <li>
-                <Link href="/login" className="text-sm hover:text-teal-300 transition-colors">
-                  Sign in
+                <Link href="/locations/sydney/cabbage-tree-bay?tab=spotted" className="text-sm hover:text-teal-300 transition-colors">
+                  Spot
                 </Link>
               </li>
               <li>
-                <Link href="/signup" className="text-sm hover:text-teal-300 transition-colors">
-                  Create account
+                <Link href="/log" className="text-sm hover:text-teal-300 transition-colors">
+                  Swims
+                </Link>
+              </li>
+              <li>
+                <Link href="/login" className="text-sm hover:text-teal-300 transition-colors">
+                  Profile
                 </Link>
               </li>
             </ul>
