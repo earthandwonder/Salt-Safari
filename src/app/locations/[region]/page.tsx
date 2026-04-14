@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Region, Species, SpeciesSeasonality } from "@/types";
 import { RegionPageClient } from "./RegionPageClient";
 
+export const revalidate = 3600;
+
 // ─── Types ───────────────────────────────────────────────────────
 export type RegionLocation = {
   id: string;
@@ -53,92 +55,84 @@ async function getRegionData(regionSlug: string) {
 
   if (!locationsRaw) return null;
 
-  // 3. For each location, get species count + in-season count
-  const locations: RegionLocation[] = [];
-  for (const loc of locationsRaw) {
-    // Species count (spottable only)
-    const { count: speciesCount } = await supabase
-      .from("location_species")
-      .select("id", { count: "exact", head: true })
-      .eq("location_id", loc.id)
-      .eq("is_spottable", true);
-
-    // In-season count: species with seasonality this month (common/occasional)
-    // AND active ≤8 months total
-    // We need to query location_species IDs first, then check seasonality
-    let inSeasonCount = 0;
-
-    // Get all spottable location_species IDs for this location
-    const allLsIds: string[] = [];
+  // 3. Batch fetch all location_species for the entire region
+  const locationIds = locationsRaw.map((l) => l.id);
+  const allRegionLS: { id: string; location_id: string; species_id: string }[] = [];
+  {
     let from = 0;
     const pageSize = 500;
     let hasMore = true;
     while (hasMore) {
-      const { data: lsBatch } = await supabase
+      const { data: batch } = await supabase
         .from("location_species")
-        .select("id")
-        .eq("location_id", loc.id)
+        .select("id, location_id, species_id")
+        .in("location_id", locationIds)
         .eq("is_spottable", true)
         .range(from, from + pageSize - 1);
-
-      if (!lsBatch || lsBatch.length === 0) {
+      if (!batch || batch.length === 0) {
         hasMore = false;
       } else {
-        allLsIds.push(...lsBatch.map((ls) => ls.id));
+        allRegionLS.push(...batch);
         from += pageSize;
-        if (lsBatch.length < pageSize) hasMore = false;
+        if (batch.length < pageSize) hasMore = false;
       }
     }
-
-    if (allLsIds.length > 0) {
-      // Fetch all seasonality records for this location's species
-      const allSeasonality: SpeciesSeasonality[] = [];
-      for (let i = 0; i < allLsIds.length; i += 200) {
-        const batch = allLsIds.slice(i, i + 200);
-        const { data: seasonality } = await supabase
-          .from("species_seasonality")
-          .select("*")
-          .in("location_species_id", batch);
-
-        if (seasonality) {
-          allSeasonality.push(...(seasonality as SpeciesSeasonality[]));
-        }
-      }
-
-      // Group by location_species_id
-      const seasonByLs = new Map<string, SpeciesSeasonality[]>();
-      for (const s of allSeasonality) {
-        const existing = seasonByLs.get(s.location_species_id) ?? [];
-        existing.push(s);
-        seasonByLs.set(s.location_species_id, existing);
-      }
-
-      // Count in-season species
-      for (const [, entries] of seasonByLs) {
-        const activeMonths = entries.filter(
-          (e) => e.likelihood === "common" || e.likelihood === "occasional"
-        );
-        const currentEntry = entries.find((e) => e.month === currentMonth);
-        const isActive =
-          currentEntry &&
-          (currentEntry.likelihood === "common" || currentEntry.likelihood === "occasional");
-        if (activeMonths.length > 0 && activeMonths.length <= 8 && isActive) {
-          inSeasonCount++;
-        }
-      }
-    }
-
-    locations.push({
-      ...loc,
-      speciesCount: speciesCount ?? 0,
-      inSeasonCount,
-    } as RegionLocation);
   }
 
-  // 4. Fetch top species across all locations in the region
-  // Get all location IDs
-  const locationIds = locationsRaw.map((l) => l.id);
+  // 4. Batch fetch all seasonality in parallel
+  const allLsIds = allRegionLS.map((ls) => ls.id);
+  const batchSize = 200;
+  const seasonalityBatches = [];
+  for (let i = 0; i < allLsIds.length; i += batchSize) {
+    seasonalityBatches.push(
+      supabase
+        .from("species_seasonality")
+        .select("location_species_id, month, likelihood")
+        .in("location_species_id", allLsIds.slice(i, i + batchSize))
+        .in("likelihood", ["common", "occasional"])
+    );
+  }
+  const seasonalityResults = await Promise.all(seasonalityBatches);
+  const allSeasonality = seasonalityResults.flatMap((r) => r.data ?? []);
 
+  // 5. Aggregate per location in JS
+  // Build map: location_species_id -> locationId
+  const lsToLocation = new Map<string, string>();
+  for (const ls of allRegionLS) {
+    lsToLocation.set(ls.id, ls.location_id);
+  }
+
+  // Count species per location
+  const speciesCountByLocation = new Map<string, number>();
+  for (const ls of allRegionLS) {
+    speciesCountByLocation.set(ls.location_id, (speciesCountByLocation.get(ls.location_id) ?? 0) + 1);
+  }
+
+  // Build map: location_species_id -> set of active months
+  const lsActiveMonths = new Map<string, Set<number>>();
+  for (const s of allSeasonality) {
+    const existing = lsActiveMonths.get(s.location_species_id) ?? new Set<number>();
+    existing.add(s.month);
+    lsActiveMonths.set(s.location_species_id, existing);
+  }
+
+  // Count in-season species per location
+  const inSeasonByLocation = new Map<string, number>();
+  for (const [lsId, activeMonths] of lsActiveMonths) {
+    const locationId = lsToLocation.get(lsId);
+    if (!locationId) continue;
+    if (activeMonths.size >= 1 && activeMonths.size <= 8 && activeMonths.has(currentMonth)) {
+      inSeasonByLocation.set(locationId, (inSeasonByLocation.get(locationId) ?? 0) + 1);
+    }
+  }
+
+  const locations: RegionLocation[] = locationsRaw.map((loc) => ({
+    ...loc,
+    speciesCount: speciesCountByLocation.get(loc.id) ?? 0,
+    inSeasonCount: inSeasonByLocation.get(loc.id) ?? 0,
+  } as RegionLocation));
+
+  // 6. Fetch top species across all locations in the region
   // Fetch location_species for all locations, ordered by total_observations
   // We'll aggregate across locations and pick top species
   const speciesAggMap = new Map<

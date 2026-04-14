@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { LikelihoodPill } from "@/components/LikelihoodPill";
@@ -366,12 +367,12 @@ function TripCard({ trip, userId }: { trip: Trip; userId: string | null }) {
             {/* Image */}
             <div className="relative w-28 h-28 md:w-32 md:h-32 shrink-0 rounded-xl overflow-hidden shadow-sm group-hover/row:ring-2 group-hover/row:ring-teal-300 transition-all">
               {s.heroImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={s.heroImageUrl}
                   alt={s.speciesName}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
+                  fill
+                  sizes="(max-width: 768px) 112px, 128px"
+                  className="object-cover"
                 />
               ) : (
                 <div className="w-full h-full photo-placeholder-species" />

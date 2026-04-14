@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import type { Photo } from "@/types";
 
@@ -82,12 +83,15 @@ export function PhotoLightbox({ photo, onClose }: PhotoLightboxProps) {
             </button>
 
             {/* Image */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photo.url}
-              alt={photo.alt_text ?? "Species photo"}
-              className="w-full max-h-[75vh] object-contain rounded-lg"
-            />
+            <div className="relative w-full rounded-lg overflow-hidden" style={{ height: "75vh" }}>
+              <Image
+                src={photo.url}
+                alt={photo.alt_text ?? "Species photo"}
+                fill
+                sizes="(max-width: 1024px) 100vw, 80vw"
+                className="object-contain"
+              />
+            </div>
 
             {/* Attribution bar */}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-white/80">
@@ -119,7 +123,7 @@ export function PhotoLightbox({ photo, onClose }: PhotoLightboxProps) {
                   <a
                     href={photo.source_url}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="noopener noreferrer nofollow"
                     className="text-teal-300 hover:text-teal-200 transition-colors text-xs underline underline-offset-2"
                   >
                     View source

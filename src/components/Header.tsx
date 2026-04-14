@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { SearchBar } from "@/components/SearchBar";
-import type { User } from "@supabase/supabase-js";
+import { useAuth } from "@/components/AuthProvider";
 
 const NAV_LINKS = [
   { href: "/locations/sydney/cabbage-tree-bay", label: "Cabbage Tree Bay" },
@@ -18,43 +18,9 @@ export default function Header() {
   const pathname = usePathname();
   const loginHref = pathname && pathname !== "/" ? `/login?redirectTo=${encodeURIComponent(pathname)}` : "/login";
   const signupHref = pathname && pathname !== "/" ? `/signup?redirectTo=${encodeURIComponent(pathname)}` : "/signup";
+  const { user, username, loading } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [username, setUsername] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    async function loadUser() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        const { data } = await supabase
-          .from("users")
-          .select("username")
-          .eq("id", user.id)
-          .single();
-        setUsername(data?.username ?? null);
-      }
-      setLoading(false);
-    }
-
-    loadUser();
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (!session?.user) {
-        setUsername(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);

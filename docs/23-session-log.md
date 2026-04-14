@@ -1446,3 +1446,221 @@ Four targeted fixes for the slowest pages (all verified with `npm run build`):
 
 ### Deviations
 - None.
+
+---
+
+## Performance Audit — Session B: Region Page Query Fix + ISR
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was done
+
+#### Step 1: Fixed N+1 query in region page
+- **`src/app/locations/[region]/page.tsx`** — Replaced the per-location sequential loop (which ran 60-100+ queries for a 20-location region) with a batched approach:
+  1. Single paginated query fetches all `location_species` rows for the entire region at once.
+  2. All seasonality data fetched in parallel batches of 200 IDs via `Promise.all`.
+  3. Species counts and in-season counts aggregated per location in JS from the batch results.
+- In-season logic preserved: species with 1–8 active months (common/occasional) AND active in current month.
+- Result: ~3 queries total instead of 60-100+.
+
+#### Step 2: Added ISR to dynamic pages
+- `src/app/locations/[region]/page.tsx` — `export const revalidate = 3600`
+- `src/app/locations/[region]/[site]/page.tsx` — `export const revalidate = 3600`
+- `src/app/species/[slug]/page.tsx` — `export const revalidate = 3600`
+- `src/app/credits/page.tsx` — `export const revalidate = 3600`
+- None had `force-dynamic` to remove.
+
+#### Pre-existing build fixes (unrelated to Session B)
+- `src/app/page.tsx` — Fixed type error: `PostgrestFilterBuilder` is `PromiseLike`, not `Promise`. Changed type annotations from `Promise<...>` to `PromiseLike<...>` for seasonality/active-month batch arrays.
+- `src/app/page.tsx` — Added missing `ctbLocationId=""` prop to fallback `<HomePageClient>` render (required by Session A's prop interface changes).
+
+### Build
+- `npm run build` passes clean.
+
+---
+
+## Performance Audit — Session D: ID Tool Server-Side + API Route Cleanup
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+1. **ID tool split into server + client components** — `src/app/id/page.tsx` + `src/app/id/SpeciesIdWizard.tsx`
+   - `page.tsx` rewritten as a server component with `revalidate = 3600` (ISR). Fetches locations server-side with parallel queries (locations + regions via `Promise.all`).
+   - `SpeciesIdWizard.tsx` is the new `"use client"` component. Receives `locations` as a prop (no more client-side fetch on mount). Uses `useMemo` for `locationsByRegion` grouping. Removed `locationsLoading` state and loading skeleton for locations.
+   - `Suspense` boundary wraps the wizard in `page.tsx` with a skeleton fallback.
+
+2. **Removed debug console.logs** — `src/app/api/species/identify/route.ts`
+   - Deleted the `console.log("--- Species ID Debug ---")` block that ran `.find()` + `JSON.stringify` on every request.
+
+3. **Added Cache-Control headers to API routes**
+   - `src/app/api/species/identify/route.ts` — `public, s-maxage=300, stale-while-revalidate=600`
+   - `src/app/api/search/route.ts` — `public, s-maxage=60, stale-while-revalidate=120`. Also removed redundant `export const dynamic = "force-dynamic"`.
+   - `src/app/api/alerts/route.ts` — `private, no-store` on both GET and POST success responses (auth-dependent route).
+
+### Files changed
+- `src/app/id/page.tsx` — rewritten as server component
+- `src/app/id/SpeciesIdWizard.tsx` — **new**, client component extracted from page.tsx
+- `src/app/api/species/identify/route.ts` — removed debug logs, added Cache-Control
+- `src/app/api/search/route.ts` — removed force-dynamic, added Cache-Control
+- `src/app/api/alerts/route.ts` — added Cache-Control headers
+
+### Deviations
+- None.
+
+### Build
+- `npm run build` passes clean.
+
+---
+
+## Performance Audit — Session C: Loading Skeletons + Auth Provider
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+1. **Loading skeletons** — Created `loading.tsx` for 5 routes:
+   - `src/app/locations/[region]/loading.tsx` — dark hero placeholder + location card grid
+   - `src/app/locations/[region]/[site]/loading.tsx` — dark hero + tab bar + species card grid
+   - `src/app/species/[slug]/loading.tsx` — dark hero + image placeholder + text lines
+   - `src/app/u/[username]/loading.tsx` — dark hero with avatar + stats row + card grid
+   - `src/app/credits/loading.tsx` — dark hero + text block lines
+   - All use `animate-pulse` on `bg-white/10` (dark) / `bg-slate-100` (light) per Pelagic design system.
+
+2. **AuthProvider context** — `src/components/AuthProvider.tsx`
+   - Shared `"use client"` context providing `{ user, username, loading }`.
+   - Single `getUser()` call + username fetch on mount, shared across all consumers.
+   - Listens to `onAuthStateChange` for login/logout, re-fetches username on auth change.
+
+3. **Layout integration** — `src/app/layout.tsx`
+   - Wrapped `{children}`, `<BottomNav />`, and `<CookieConsent />` in `<AuthProvider>`.
+
+4. **Header refactored** — `src/components/Header.tsx`
+   - Replaced local auth `useEffect` + `user`/`username`/`loading` state with `useAuth()` hook.
+   - Removed `User` type import (no longer needed). Kept `createClient` for `handleSignOut()`.
+
+5. **BottomNav refactored** — `src/components/BottomNav.tsx`
+   - Replaced local auth `useEffect` + `username`/`authLoaded` state with `useAuth()` hook.
+   - `authLoaded = !loading` alias preserves existing profile link behavior.
+   - Removed `createClient` import and `useState`/`useEffect` imports (no longer needed).
+
+### Files created
+- `src/components/AuthProvider.tsx`
+- `src/app/locations/[region]/loading.tsx`
+- `src/app/locations/[region]/[site]/loading.tsx`
+- `src/app/species/[slug]/loading.tsx`
+- `src/app/u/[username]/loading.tsx`
+- `src/app/credits/loading.tsx`
+
+### Files changed
+- `src/app/layout.tsx` — added `AuthProvider` wrapper
+- `src/components/Header.tsx` — replaced local auth with `useAuth()` context
+- `src/components/BottomNav.tsx` — replaced local auth with `useAuth()` context
+
+### Deviations
+- None. All 5 steps completed as specified.
+
+### Build
+- `npm run build` passes clean.
+
+---
+
+## Performance Audit — Session A: Home Page Performance + Middleware Scoping
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+1. **Home page auth moved to client side** — `src/app/page.tsx`
+   - Removed `supabase.auth.getUser()` and all user-specific data fetching (sightings, spotted species, latest log) from the server component.
+   - Collection preview always uses the logged-out path (random shuffle, first 4 revealed). Client recomputes when auth resolves.
+   - New prop `ctbLocationId` passed to `HomePageClient` so the client can query sightings.
+
+2. **Home page switched to ISR** — `src/app/page.tsx`
+   - Replaced `export const dynamic = "force-dynamic"` with `export const revalidate = 3600` (1-hour ISR cache).
+   - Server component now fetches only public data — safe for caching.
+
+3. **Home page data fetching parallelized** — `src/app/page.tsx`
+   - Scoped seasonality query to CTB `location_species_id`s (was fetching all site-wide seasonality).
+   - Parallelized current-month seasonality batches and active-month-count batches with `Promise.all`.
+   - Built lookup map from `location_species_id` to species data for in-season list building.
+
+4. **Client-side auth in HomePageClient** — `src/app/HomePageClient.tsx`
+   - Added `useEffect` that calls `getUser()` via browser Supabase client, fetches CTB sightings if logged in.
+   - Stores `isLoggedIn`, `userSpottedCount`, `userLatestLog` in component state.
+   - `collectionPreview` state initialized from server prop, recomputed client-side when auth resolves (spotted species marked revealed, sorted first).
+   - All auth-dependent UI (progress bar, trip card, CTA button, avatar stack) gates on `authResolved` to prevent flash of wrong content.
+
+5. **Middleware scoped to protected routes only** — `src/middleware.ts`
+   - Replaced catch-all matcher with explicit allowlist: `/log/*`, `/alerts/*`, `/u/*`, `/api/alerts/*`, `/api/sightings/*`, `/auth/*`.
+   - Public pages no longer run middleware (no auth session refresh on every request).
+
+### Files changed
+- `src/app/page.tsx` — ISR, removed auth, parallelized queries
+- `src/app/HomePageClient.tsx` — client-side auth, collection preview state
+- `src/middleware.ts` — scoped matcher to protected routes
+
+### Deviations
+- None.
+
+### Build
+- `npm run build` passes clean.
+
+---
+
+## Performance Audit — Session E: Replace `<img>` with `next/image`
+**Date:** 2026-04-14
+**Status:** Complete
+
+### What was built
+
+#### Step 1: Added R2 remote pattern to `next.config.ts`
+- Added Cloudflare R2 bucket hostname (`pub-679ea585b55d48a78970795a14563299.r2.dev`) to `images.remotePatterns`.
+
+#### Step 2: Replaced all `<img>` tags with `next/image` across 17 files
+
+**Components (3 files):**
+- `src/components/SpeciesCard.tsx` — card image uses `fill` + responsive `sizes`
+- `src/components/LocationCard.tsx` — card image uses `fill` + responsive `sizes`
+- `src/components/PhotoLightbox.tsx` — wrapped in relative container with `height: 75vh`, uses `fill` + `object-contain`
+
+**Home page (1 file):**
+- `src/app/HomePageClient.tsx` — 6 replacements: hero background (`fill` + `priority`), in-season species cards, collection grid thumbnails, avatar stack images (`width`/`height`), discover species cards
+
+**Species pages (3 files):**
+- `src/app/species/[slug]/SpeciesPageClient.tsx` — hero image (`fill` + `priority`)
+- `src/app/species/[slug]/AboutTab.tsx` — similar species card images (`fill`)
+- `src/app/species/[slug]/PhotosTab.tsx` — photo grid items (`fill`)
+
+**Location pages (5 files):**
+- `src/app/locations/page.tsx` — region card images (`fill`)
+- `src/app/locations/[region]/RegionPageClient.tsx` — hero image (`fill` + `priority`)
+- `src/app/locations/[region]/[site]/LocationPageClient.tsx` — hero image (`fill` + `priority`)
+- `src/app/locations/[region]/[site]/community/CommunityCalendarClient.tsx` — hero image (`fill` + `priority`)
+- `src/app/locations/[region]/[site]/community/[date]/CommunityDayClient.tsx` — hero + species cards (2 instances)
+
+**Other pages (5 files):**
+- `src/app/id/SpeciesIdWizard.tsx` — species result thumbnails (`width={80} height={80}`)
+- `src/app/log/page.tsx` — sighting row images (`fill`)
+- `src/app/swims/[id]/TripPageClient.tsx` — hero mosaic + sighting row images (2 instances)
+- `src/app/u/[username]/ProfilePageClient.tsx` — trip card thumbnails (`width={48} height={48}`)
+- `src/app/alerts/page.tsx` — species thumbnails (`width={64} height={64}`)
+
+#### Exclusions (as specified)
+- `src/app/swims/[id]/opengraph-image.tsx` — uses `ImageResponse` from `next/og`, requires native `<img>`
+
+### Conversion patterns used
+- **Hero/fill images:** `fill` + `sizes="100vw"` + `priority` for LCP optimization
+- **Card images in aspect-ratio containers:** `fill` + responsive `sizes` (parent already `relative`)
+- **Fixed-size thumbnails/avatars:** explicit `width` and `height` props
+- **Lightbox modal:** relative container with `style={{ height: "75vh" }}` + `fill` + `object-contain`
+
+### Files changed
+- `next.config.ts` — added R2 remote pattern
+- 17 source files — replaced `<img>` with `<Image>`, removed eslint-disable comments
+
+### Deviations
+- None.
+
+### Build
+- `npm run build` passes clean. Zero `@next/next/no-img-element` warnings (only excluded `opengraph-image.tsx` retains native `<img>`).

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -235,10 +236,11 @@ export default function AlertsPage() {
                   className="flex-shrink-0"
                 >
                   {alert.species?.hero_image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={alert.species.hero_image_url}
                       alt={alert.species.name}
+                      width={64}
+                      height={64}
                       className="w-14 h-14 md:w-16 md:h-16 rounded-lg object-cover"
                     />
                   ) : (

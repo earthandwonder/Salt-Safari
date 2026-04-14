@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "motion/react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -104,14 +105,15 @@ export function TripPageClient({ trip }: { trip: TripData }) {
           <div className="absolute inset-0 flex flex-wrap gap-0 overflow-hidden">
             {trip.sightings.slice(0, 12).map((s, i) =>
               s.heroImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   key={s.id}
                   src={s.heroImageUrl}
                   alt=""
+                  width={400}
+                  height={300}
                   className="w-1/4 h-1/3 object-cover"
                   style={{ opacity: 0.6 + (i % 3) * 0.15 }}
-                  loading="eager"
+                  priority
                 />
               ) : null,
             )}
@@ -340,12 +342,12 @@ function SightingRow({
         {/* Image — full-width on mobile, fixed width on desktop */}
         <div className="relative aspect-[16/10] lg:aspect-auto lg:w-72 lg:shrink-0 overflow-hidden">
           {sighting.heroImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={sighting.heroImageUrl}
               alt={sighting.speciesName}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover/row:scale-[1.03]"
-              loading="lazy"
+              fill
+              sizes="(max-width: 1024px) 100vw, 288px"
+              className="object-cover transition-transform duration-500 group-hover/row:scale-[1.03]"
             />
           ) : (
             <div className="w-full h-full photo-placeholder-species" />

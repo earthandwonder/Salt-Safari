@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Credits & Attribution",
   description:
@@ -124,7 +126,7 @@ export default async function CreditsPage() {
                             <a
                               href={credit.website_url}
                               target="_blank"
-                              rel="noopener noreferrer"
+                              rel="noopener noreferrer nofollow"
                               className="text-coral hover:text-coral/80 transition-colors underline underline-offset-2"
                             >
                               {credit.photographer_name}

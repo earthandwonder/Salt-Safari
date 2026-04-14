@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Location, Region, Species, LocationSpecies, SpeciesSeasonality } from "@/types";
 import { LocationPageClient } from "./LocationPageClient";
 
+export const revalidate = 3600;
+
 // ─── Types ───────────────────────────────────────────────────────
 export type LocationSpeciesWithDetails = {
   species: Species;

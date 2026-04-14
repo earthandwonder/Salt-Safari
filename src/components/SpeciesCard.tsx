@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { LikelihoodPill, type Likelihood } from "./LikelihoodPill";
 import { SeasonBadge } from "./SeasonBadge";
@@ -43,12 +44,12 @@ export function SpeciesCard({
       {/* Photo — 4:3 aspect ratio */}
       <div className="relative aspect-[4/3] overflow-hidden">
         {heroImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={heroImageUrl}
             alt={commonName}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full photo-placeholder-species" />

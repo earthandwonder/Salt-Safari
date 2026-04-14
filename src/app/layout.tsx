@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import BottomNav from "@/components/BottomNav";
 import { CookieConsent } from "@/components/CookieConsent";
+import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -49,9 +50,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${fraunces.variable} ${outfit.variable}`} suppressHydrationWarning>
       <body className="font-body antialiased pb-20 md:pb-0">
-        {children}
-        <BottomNav />
-        <CookieConsent />
+        <AuthProvider>
+          {children}
+          <BottomNav />
+          <CookieConsent />
+        </AuthProvider>
       </body>
     </html>
   );

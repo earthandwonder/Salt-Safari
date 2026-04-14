@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import type { Species, Photo, Location, Region, LocationSpecies, SpeciesSeasonality } from "@/types";
 import { SpeciesPageClient } from "./SpeciesPageClient";
 
+export const revalidate = 3600;
+
 // ─── Types ───────────────────────────────────────────────────────
 export type LocationOccurrence = {
   location: Pick<Location, "id" | "name" | "slug"> & { region: Pick<Region, "name" | "slug"> };

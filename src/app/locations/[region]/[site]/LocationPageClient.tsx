@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
@@ -155,13 +156,15 @@ export function LocationPageClient({
         {/* Background image or gradient */}
         {location.hero_image_url ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={location.hero_image_url}
               alt={location.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
             />
-            {/* Gradient overlay — stronger at bottom for text legibility */}
+            {/* Gradient overlay -- stronger at bottom for text legibility */}
             <div className="absolute inset-0 bg-gradient-to-t from-deep via-deep/60 to-deep/20" />
           </>
         ) : (

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
-
 interface SpeciesResult {
   type: "species";
   slug: string;
@@ -95,5 +93,7 @@ export async function GET(request: NextRequest) {
     ...Array.from(speciesMap.values()).slice(0, 15),
   ];
 
-  return NextResponse.json({ results });
+  return NextResponse.json({ results }, {
+    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+  });
 }

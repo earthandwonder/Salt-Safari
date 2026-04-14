@@ -280,13 +280,7 @@ export async function GET(request: NextRequest) {
   // Limit to top 50 results
   const results = scored.slice(0, 50);
 
-  // Debug: log scoring breakdown for top 10 results
-  console.log("--- Species ID Debug ---");
-  console.log("Filters:", { location, month, depth, size, colours, habitat });
-  results.slice(0, 10).forEach((r, i) => {
-    const sp = allSpecies.find((s) => s.id === r.id);
-    console.log(`#${i + 1} ${r.name} | score=${r.matchScore.toFixed(3)} label=${r.matchLabel} | size=${r.size_category} depth=${r.depth_zone} colours=${JSON.stringify(r.colours)} habitat=${JSON.stringify(r.habitat)} confidence=${sp?.confidence} seasonal=${seasonalSpeciesIds ? seasonalSpeciesIds.has(r.id) : "n/a"}`);
+  return NextResponse.json({ results, total: scored.length }, {
+    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" },
   });
-
-  return NextResponse.json({ results, total: scored.length });
 }

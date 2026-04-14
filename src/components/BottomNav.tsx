@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 type NavItem = {
   label: string;
@@ -14,39 +13,8 @@ type NavItem = {
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const [username, setUsername] = useState<string | null>(null);
-  const [authLoaded, setAuthLoaded] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("users")
-          .select("username")
-          .eq("id", user.id)
-          .single();
-        setUsername(data?.username ?? null);
-      }
-      setAuthLoaded(true);
-    }
-
-    loadUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
-        setUsername(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const { username, loading } = useAuth();
+  const authLoaded = !loading;
 
   // Hide on login/signup pages
   if (pathname?.startsWith("/login") || pathname?.startsWith("/signup")) {

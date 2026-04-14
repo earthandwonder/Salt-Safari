@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Header from "@/components/Header";
 import { WaveDivider } from "@/components/WaveDivider";
 import { Footer } from "@/components/Footer";
 import { MapView, MapPin } from "@/components/MapView";
 import { Marker } from "react-map-gl/mapbox";
+import { createClient } from "@/lib/supabase/client";
 
 type InSeasonSpecies = {
   speciesId: string;
@@ -47,9 +50,7 @@ interface HomePageClientProps {
   inSeasonSpecies: InSeasonSpecies[];
   collectionPreviewSpecies: CollectionPreviewSpecies[];
   discoverSpecies: DiscoverSpecies[];
-  userSpottedCount?: number;
-  userLatestLog?: UserLatestLog | null;
-  isLoggedIn?: boolean;
+  ctbLocationId: string;
   heroImageUrl?: string | null;
   locationLat?: number | null;
   locationLng?: number | null;
@@ -62,14 +63,76 @@ export function HomePageClient({
   inSeasonSpecies,
   collectionPreviewSpecies,
   discoverSpecies,
-  userSpottedCount,
-  userLatestLog,
-  isLoggedIn,
+  ctbLocationId,
   heroImageUrl,
   locationLat,
   locationLng,
 }: HomePageClientProps) {
-  const spottedCount = isLoggedIn ? (userSpottedCount ?? 0) : 0;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authResolved, setAuthResolved] = useState(false);
+  const [userSpottedCount, setUserSpottedCount] = useState(0);
+  const [userLatestLog, setUserLatestLog] = useState<UserLatestLog | null>(null);
+  const [collectionPreview, setCollectionPreview] = useState(collectionPreviewSpecies);
+
+  useEffect(() => {
+    async function loadAuth() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setAuthResolved(true);
+        return;
+      }
+
+      setIsLoggedIn(true);
+
+      const { data: userSightings } = await supabase
+        .from("sightings")
+        .select("species_id, sighted_at, location_id, species:species_id (hero_image_url), locations:location_id (name)")
+        .eq("user_id", user.id)
+        .eq("location_id", ctbLocationId)
+        .order("sighted_at", { ascending: false });
+
+      if (userSightings && userSightings.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sightings = userSightings as any[];
+        const spottedIds = new Set<string>();
+        for (const s of sightings) {
+          spottedIds.add(s.species_id);
+        }
+        setUserSpottedCount(spottedIds.size);
+
+        // Latest log
+        const latestDate = sightings[0].sighted_at;
+        const latestSession = sightings.filter((s) => s.sighted_at === latestDate);
+        const latestSpeciesImages = latestSession
+          .map((s: { species?: { hero_image_url?: string | null } }) => s.species?.hero_image_url)
+          .filter((url: string | null | undefined): url is string => !!url);
+        const locationName = (sightings[0] as { locations?: { name?: string } }).locations?.name ?? "Cabbage Tree Bay";
+
+        setUserLatestLog({
+          speciesCount: latestSession.length,
+          locationName,
+          date: latestDate,
+          speciesImages: latestSpeciesImages,
+        });
+
+        // Recompute collection preview — spotted species revealed & sorted first
+        const updated = collectionPreviewSpecies.map((sp) => ({
+          ...sp,
+          revealed: spottedIds.has(sp.id) || sp.revealed,
+        }));
+        const spotted = updated.filter((sp) => spottedIds.has(sp.id));
+        const rest = updated.filter((sp) => !spottedIds.has(sp.id));
+        setCollectionPreview([...spotted, ...rest]);
+      }
+
+      setAuthResolved(true);
+    }
+    loadAuth();
+  }, [ctbLocationId, collectionPreviewSpecies]);
+
+  const spottedCount = isLoggedIn ? userSpottedCount : 0;
   const progressPercent = spottableCount > 0 ? Math.round((spottedCount / spottableCount) * 100) : 0;
   return (
     <main>
@@ -81,11 +144,13 @@ export function HomePageClient({
       <section className="relative z-0 min-h-[70svh] flex flex-col justify-end hero-gradient overflow-hidden">
         {heroImageUrl && (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={heroImageUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-deep/90 via-deep/55 to-deep/25" />
           </>
@@ -145,12 +210,12 @@ export function HomePageClient({
                   <div className="card-lift rounded-2xl overflow-hidden bg-white shadow-sm">
                     <div className="aspect-[4/3] relative overflow-hidden">
                       {item.heroImageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={item.heroImageUrl}
                           alt={item.commonName}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
+                          fill
+                          sizes="(max-width: 768px) 200px, 25vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
                         <div className="w-full h-full photo-placeholder-species" />
@@ -173,9 +238,11 @@ export function HomePageClient({
                       <h3 className="font-display text-base font-semibold text-deep group-hover:text-teal-700 transition-colors truncate">
                         {item.commonName}
                       </h3>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {item.monthRange}
-                      </p>
+                      {item.scientificName && (
+                        <p className="text-xs text-slate-400 italic mt-1 truncate">
+                          {item.scientificName}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </Link>
@@ -186,7 +253,7 @@ export function HomePageClient({
             <div className="mt-8 bg-deep/5 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <p className="font-display text-lg font-semibold text-deep">
-                  Is there a species you&apos;re excited to see?
+                  Is there a species you&apos;re waiting to see?
                 </p>
                 <p className="text-sm text-slate-500 mt-1">
                   We&apos;ll alert you when they&apos;re in town
@@ -213,7 +280,7 @@ export function HomePageClient({
               Your underwater gallery
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed">
-              We&apos;ve picked {spottableCount} species you might find at Cabbage Tree Bay. How many can you spot?
+              We&apos;ve picked {spottableCount} species you might find at Cabbage Tree Bay. How many can you see?
             </p>
           </div>
 
@@ -226,39 +293,33 @@ export function HomePageClient({
                 </span>{" "}
                 of {spottableCount.toLocaleString()} spotted
               </p>
-              <Link
-                href="/locations/sydney/cabbage-tree-bay"
-                className="text-sm text-teal-600 hover:text-teal-700 font-medium transition-colors"
-              >
-                Start spotting
-              </Link>
             </div>
             <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-1000"
-                style={{ width: `${Math.max(progressPercent, isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
+                style={{ width: `${Math.max(progressPercent, authResolved && isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
               />
             </div>
           </div>
 
           {/* Species collection grid */}
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
-            {collectionPreviewSpecies.map((species) => (
+            {collectionPreview.map((species) => (
               <div
                 key={species.id}
                 className="group relative rounded-xl overflow-hidden aspect-square"
               >
                 {species.heroImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={species.heroImageUrl}
                     alt={species.revealed ? species.commonName : "Unknown species"}
-                    className={`w-full h-full object-cover ${
+                    fill
+                    sizes="(max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+                    className={`object-cover ${
                       species.revealed
                         ? "transition-transform duration-500 group-hover:scale-105"
                         : "grayscale brightness-[0.3]"
                     }`}
-                    loading="lazy"
                   />
                 ) : (
                   <div
@@ -325,15 +386,15 @@ export function HomePageClient({
           <div className="max-w-sm mx-auto">
             <div className="bg-deep rounded-2xl p-5 md:p-6 shadow-xl shadow-deep/20">
               <p className="text-white/40 text-xs tracking-wider uppercase mb-3">
-                {isLoggedIn && userLatestLog ? "Your latest swim" : "Shareable swim report"}
+                {authResolved && isLoggedIn && userLatestLog ? "Your latest swim" : "Shareable swim report"}
               </p>
               <p className="font-display text-lg font-semibold text-white mb-1">
-                {isLoggedIn && userLatestLog
+                {authResolved && isLoggedIn && userLatestLog
                   ? `You saw ${userLatestLog.speciesCount} species`
                   : "You saw 8 species"}
               </p>
               <p className="text-white/50 text-sm mb-4">
-                {isLoggedIn && userLatestLog
+                {authResolved && isLoggedIn && userLatestLog
                   ? `${userLatestLog.locationName} \u00B7 ${new Date(userLatestLog.date).toLocaleDateString("en-AU", { month: "long", day: "numeric", year: "numeric" })}`
                   : "Cabbage Tree Bay \u00B7 April 13, 2026"}
               </p>
@@ -341,7 +402,7 @@ export function HomePageClient({
               {/* Avatar stack of species */}
               <div className="flex items-center mb-4">
                 <div className="flex -space-x-2">
-                  {isLoggedIn && userLatestLog ? (
+                  {authResolved && isLoggedIn && userLatestLog ? (
                     <>
                       {userLatestLog.speciesImages.slice(0, 5).map((url, i) => (
                         <div
@@ -349,10 +410,11 @@ export function HomePageClient({
                           className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
                           style={{ zIndex: 5 - i }}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                          <Image
                             src={url}
                             alt="Species"
+                            width={36}
+                            height={36}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -365,7 +427,7 @@ export function HomePageClient({
                     </>
                   ) : (
                     <>
-                      {collectionPreviewSpecies
+                      {collectionPreview
                         .filter((s) => s.revealed && s.heroImageUrl)
                         .slice(0, 5)
                         .map((s, i) => (
@@ -374,10 +436,11 @@ export function HomePageClient({
                             className="w-9 h-9 rounded-full border-2 border-deep overflow-hidden"
                             style={{ zIndex: 5 - i }}
                           >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <Image
                               src={s.heroImageUrl!}
                               alt={s.commonName}
+                              width={36}
+                              height={36}
                               className="w-full h-full object-cover"
                             />
                           </div>
@@ -395,7 +458,7 @@ export function HomePageClient({
                 <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full"
-                    style={{ width: `${Math.max(progressPercent, isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
+                    style={{ width: `${Math.max(progressPercent, authResolved && isLoggedIn && spottedCount > 0 ? 2 : 0)}%` }}
                   />
                 </div>
                 <span className="text-white/40 text-xs whitespace-nowrap">
@@ -407,7 +470,7 @@ export function HomePageClient({
             {/* Share your swim button */}
             <div className="mt-5 flex justify-center">
               <Link
-                href={isLoggedIn ? "/log" : "/signup?redirectTo=%2Flog"}
+                href={authResolved && isLoggedIn ? "/log" : "/signup?redirectTo=%2Flog"}
                 className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white px-7 py-3 rounded-full font-semibold transition-colors"
               >
                 Share your swim
@@ -618,12 +681,12 @@ export function HomePageClient({
                   <div className="card-lift rounded-2xl overflow-hidden bg-white shadow-sm border border-slate-100">
                     <div className="aspect-[4/3] relative overflow-hidden">
                       {species.heroImageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={species.heroImageUrl}
                           alt={species.commonName}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          loading="lazy"
+                          fill
+                          sizes="(max-width: 640px) 100vw, 33vw"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
                         <div className="w-full h-full photo-placeholder-species" />

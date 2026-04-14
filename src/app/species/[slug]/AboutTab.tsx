@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { DangerPill } from "@/components/DangerPill";
 import type { Species } from "@/types";
 import type { SimilarSpecies } from "./page";
@@ -189,12 +190,12 @@ export function AboutTab({ species, similarSpecies }: AboutTabProps) {
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   {sim.hero_image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={sim.hero_image_url}
                       alt={sim.name}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="w-full h-full photo-placeholder-species" />

@@ -24,7 +24,9 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ alerts: data });
+  return NextResponse.json({ alerts: data }, {
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }
 
 // POST /api/alerts/subscribe — create a new alert
@@ -69,5 +71,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ alert: data }, { status: 201 });
+  return NextResponse.json({ alert: data }, {
+    status: 201,
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }

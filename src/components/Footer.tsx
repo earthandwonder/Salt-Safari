@@ -105,7 +105,7 @@ export function Footer() {
             <a
               href="https://www.inaturalist.org"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener noreferrer nofollow"
               className="text-white/50 hover:text-teal-300 transition-colors"
             >
               iNaturalist
@@ -114,7 +114,7 @@ export function Footer() {
             <a
               href="https://www.ala.org.au"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener noreferrer nofollow"
               className="text-white/50 hover:text-teal-300 transition-colors"
             >
               Atlas of Living Australia
@@ -123,7 +123,7 @@ export function Footer() {
             <a
               href="https://obis.org"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener noreferrer nofollow"
               className="text-white/50 hover:text-teal-300 transition-colors"
             >
               OBIS
@@ -132,7 +132,7 @@ export function Footer() {
             <a
               href="https://www.marinespecies.org"
               target="_blank"
-              rel="noopener noreferrer"
+              rel="noopener noreferrer nofollow"
               className="text-white/50 hover:text-teal-300 transition-colors"
             >
               WoRMS

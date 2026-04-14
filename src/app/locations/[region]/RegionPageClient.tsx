@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { TabBar, TabPanel } from "@/components/TabBar";
@@ -46,11 +47,13 @@ export function RegionPageClient({
       <section className="relative w-full min-h-[48vh] md:min-h-[44vh] flex items-end overflow-hidden">
         {region.hero_image_url ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={region.hero_image_url}
               alt={region.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-deep via-deep/60 to-deep/20" />
           </>

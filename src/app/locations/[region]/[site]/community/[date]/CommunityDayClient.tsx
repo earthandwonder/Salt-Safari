@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -65,11 +66,13 @@ export function CommunityDayClient({
       <section className="relative z-0 min-h-[50svh] flex flex-col justify-end hero-gradient overflow-hidden">
         {locationHeroUrl && (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={locationHeroUrl}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-deep/95 via-deep/60 to-deep/30" />
           </>
@@ -204,12 +207,12 @@ export function CommunityDayClient({
                 >
                   <div className="relative aspect-[4/3] overflow-hidden">
                     {sp.heroImageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={sp.heroImageUrl}
                         alt={sp.name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <div className="w-full h-full photo-placeholder-species" />

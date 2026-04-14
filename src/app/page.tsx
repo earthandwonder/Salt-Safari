@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { HomePageClient } from "./HomePageClient";
 
-export const dynamic = "force-dynamic"; // needs auth check per request
+export const revalidate = 3600; // ISR — public data only, auth moved to client
 
 type InSeasonSpecies = {
   speciesId: string;
@@ -102,6 +102,7 @@ export default async function HomePage() {
         inSeasonSpecies={[]}
         collectionPreviewSpecies={[]}
         discoverSpecies={[]}
+        ctbLocationId=""
       />
     );
   }
@@ -141,25 +142,6 @@ export default async function HomePage() {
     }
   }
 
-  // Fetch seasonality data (separate query)
-  const { data: seasonalityData } = await supabase
-    .from("species_seasonality")
-    .select(`
-      month,
-      likelihood,
-      location_species_id,
-      location_species:location_species_id (
-        id,
-        species_id,
-        location_id,
-        species:species_id (
-          id, name, scientific_name, slug, hero_image_url, is_charismatic
-        )
-      )
-    `)
-    .eq("month", currentMonth)
-    .in("likelihood", ["common", "occasional"]);
-
   // --- Species counts at CTB ---
   // Deduplicate by species_id (keep row with most observations), matching location page logic
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -175,48 +157,68 @@ export default async function HomePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const spottableCount = allLS.filter((ls: any) => ls.is_spottable).length;
 
-  // --- Filter seasonality to CTB only ---
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ctbSeasonality = (seasonalityData ?? []).filter((row: any) => {
-    return row.location_species?.location_id === ctbLocation.id;
-  });
+  // --- Scoped seasonality + active month counts (parallelized) ---
+  const ctbLocationSpeciesIds = allLocationSpeciesRaw.map((ls) => ls.id as string);
 
-  // --- Get active month counts for in-season species ---
-  const locationSpeciesIds = new Set<string>();
+  // Fetch current-month seasonality scoped to CTB location_species IDs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const row of ctbSeasonality as any[]) {
-    if (row.location_species_id) {
-      locationSpeciesIds.add(row.location_species_id);
-    }
-  }
-
-  const activeMonthCounts: Record<string, number[]> = {};
-  if (locationSpeciesIds.size > 0) {
-    const lsIdArray = Array.from(locationSpeciesIds);
-    for (let i = 0; i < lsIdArray.length; i += 200) {
-      const batch = lsIdArray.slice(i, i + 200);
-      const { data: allMonths } = await supabase
+  const seasonalityBatches: PromiseLike<{ data: { location_species_id: string; month: number; likelihood: string }[] | null }>[] = [];
+  for (let i = 0; i < ctbLocationSpeciesIds.length; i += 200) {
+    seasonalityBatches.push(
+      supabase
         .from("species_seasonality")
         .select("location_species_id, month, likelihood")
-        .in("location_species_id", batch)
-        .in("likelihood", ["common", "occasional"]);
+        .in("location_species_id", ctbLocationSpeciesIds.slice(i, i + 200))
+        .eq("month", currentMonth)
+        .in("likelihood", ["common", "occasional"])
+    );
+  }
 
-      for (const m of allMonths ?? []) {
-        if (!activeMonthCounts[m.location_species_id]) {
-          activeMonthCounts[m.location_species_id] = [];
-        }
-        activeMonthCounts[m.location_species_id].push(m.month);
+  // Fetch ALL active months for those same IDs (needed for month range computation)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activeMonthBatches: PromiseLike<{ data: { location_species_id: string; month: number; likelihood: string }[] | null }>[] = [];
+  for (let i = 0; i < ctbLocationSpeciesIds.length; i += 200) {
+    activeMonthBatches.push(
+      supabase
+        .from("species_seasonality")
+        .select("location_species_id, month, likelihood")
+        .in("location_species_id", ctbLocationSpeciesIds.slice(i, i + 200))
+        .in("likelihood", ["common", "occasional"])
+    );
+  }
+
+  // Run both sets of batches in parallel
+  const [seasonalityResults, activeMonthResults] = await Promise.all([
+    Promise.all(seasonalityBatches),
+    Promise.all(activeMonthBatches),
+  ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ctbSeasonality = seasonalityResults.flatMap((r) => r.data ?? []) as any[];
+
+  const activeMonthCounts: Record<string, number[]> = {};
+  for (const r of activeMonthResults) {
+    for (const m of r.data ?? []) {
+      if (!activeMonthCounts[m.location_species_id]) {
+        activeMonthCounts[m.location_species_id] = [];
       }
+      activeMonthCounts[m.location_species_id].push(m.month);
     }
   }
 
   // --- Build In Season species list ---
+  // Build a lookup from location_species_id to species data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lsById = new Map<string, any>();
+  for (const ls of allLocationSpeciesRaw) {
+    lsById.set(ls.id, ls);
+  }
+
   const inSeasonSpecies: InSeasonSpecies[] = [];
   const seenSpeciesIds = new Set<string>();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const row of ctbSeasonality as any[]) {
-    const ls = row.location_species;
+  for (const row of ctbSeasonality) {
+    const ls = lsById.get(row.location_species_id);
     if (!ls) continue;
 
     const species = ls.species;
@@ -254,49 +256,6 @@ export default async function HomePage() {
     ...dailySeedShuffle(tier2),
   ].slice(0, 8);
 
-  // --- Check if user is logged in and fetch their sighting data ---
-  const { data: { user } } = await supabase.auth.getUser();
-  const isLoggedIn = !!user;
-
-  let userSpottedSpeciesIds: Set<string> = new Set();
-  let userSpottedCount = 0;
-  let userLatestLog: { speciesCount: number; locationName: string; date: string; speciesImages: string[] } | null = null;
-
-  if (user) {
-    // Fetch all distinct species the user has spotted at CTB
-    const { data: userSightings } = await supabase
-      .from("sightings")
-      .select("species_id, sighted_at, location_id, species:species_id (hero_image_url), locations:location_id (name)")
-      .eq("user_id", user.id)
-      .eq("location_id", ctbLocation.id)
-      .order("sighted_at", { ascending: false });
-
-    if (userSightings && userSightings.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sightings = userSightings as any[];
-      // Distinct species spotted at CTB
-      for (const s of sightings) {
-        userSpottedSpeciesIds.add(s.species_id);
-      }
-      userSpottedCount = userSpottedSpeciesIds.size;
-
-      // Latest log date — group sightings by date to find the most recent "session"
-      const latestDate = sightings[0].sighted_at;
-      const latestSession = sightings.filter((s) => s.sighted_at === latestDate);
-      const latestSpeciesImages = latestSession
-        .map((s) => s.species?.hero_image_url)
-        .filter((url: string | null): url is string => !!url);
-      const locationName = latestSession[0].locations?.name ?? "Cabbage Tree Bay";
-
-      userLatestLog = {
-        speciesCount: latestSession.length,
-        locationName,
-        date: latestDate,
-        speciesImages: latestSpeciesImages,
-      };
-    }
-  }
-
   // --- Build Discover Species list (3 random spottable species with photos) ---
   const spottableWithPhotos = allLS.filter(
     (ls) => ls.is_spottable && ls.species?.hero_image_url && ls.species?.slug
@@ -316,27 +275,15 @@ export default async function HomePage() {
     (ls) => ls.is_spottable && ls.species?.hero_image_url
   );
 
-  let collectionPreview;
-  if (isLoggedIn && userSpottedSpeciesIds.size > 0) {
-    // Put the user's spotted species first, then fill remaining slots with unspotted
-    const spotted = spottableSpecies.filter((ls) => userSpottedSpeciesIds.has(ls.species.id));
-    const unspotted = spottableSpecies.filter((ls) => !userSpottedSpeciesIds.has(ls.species.id));
-    const shuffledSpotted = dailySeedShuffle(spotted);
-    const shuffledUnspotted = dailySeedShuffle(unspotted);
-    collectionPreview = [...shuffledSpotted, ...shuffledUnspotted].slice(0, 12);
-  } else {
-    const shuffledForCollection = dailySeedShuffle(spottableSpecies);
-    collectionPreview = shuffledForCollection.slice(0, 12);
-  }
+  const shuffledForCollection = dailySeedShuffle(spottableSpecies);
+  const collectionPreview = shuffledForCollection.slice(0, 12);
 
   const collectionPreviewSpecies: CollectionPreviewSpecies[] =
     collectionPreview.map((ls, index) => ({
       id: ls.species.id,
       commonName: ls.species.name,
       heroImageUrl: ls.species.hero_image_url,
-      revealed: isLoggedIn
-        ? userSpottedSpeciesIds.has(ls.species.id)
-        : index < 4,
+      revealed: index < 4,
     }));
 
   // Pad with placeholders if we don't have 12 species yet
@@ -357,9 +304,7 @@ export default async function HomePage() {
       inSeasonSpecies={sortedInSeason}
       collectionPreviewSpecies={collectionPreviewSpecies}
       discoverSpecies={discoverSpecies}
-      userSpottedCount={userSpottedCount}
-      userLatestLog={userLatestLog}
-      isLoggedIn={isLoggedIn}
+      ctbLocationId={ctbLocation.id}
       heroImageUrl={ctbLocation.hero_image_url}
       locationLat={ctbLocation.lat}
       locationLng={ctbLocation.lng}

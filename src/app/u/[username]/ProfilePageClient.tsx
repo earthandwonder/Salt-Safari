@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WaveDivider } from "@/components/WaveDivider";
@@ -217,12 +218,12 @@ function TripCard({ trip }: { trip: ProfileTrip }) {
             style={{ marginLeft: i === 0 ? 0 : -8 }}
           >
             {s.heroImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={s.heroImageUrl}
                 alt={s.speciesName}
+                width={48}
+                height={48}
                 className="w-full h-full object-cover"
-                loading="lazy"
               />
             ) : (
               <div className="w-full h-full photo-placeholder-species" />
