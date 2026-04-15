@@ -28,7 +28,7 @@ export function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-20 md:bottom-0 left-0 right-0 z-50 p-4 md:p-6">
+    <div className="fixed top-0 left-0 right-0 z-50 p-4 md:p-6">
       <div className="max-w-lg mx-auto bg-deep text-white rounded-xl shadow-2xl border border-white/10 p-5">
         <p className="text-sm leading-relaxed text-white/80">
           Salt Safari uses essential cookies for authentication and optional

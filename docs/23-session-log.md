@@ -1664,3 +1664,43 @@ Four targeted fixes for the slowest pages (all verified with `npm run build`):
 
 ### Build
 - `npm run build` passes clean. Zero `@next/next/no-img-element` warnings (only excluded `opengraph-image.tsx` retains native `<img>`).
+
+---
+
+## Header & Auth Fixes
+**Date:** 2026-04-15
+**Status:** Complete
+
+### What was built
+
+#### Header navigation overhaul
+- **Nav links updated:** Removed hardcoded Cabbage Tree Bay / All Species links. Now: Species (`/locations/sydney/cabbage-tree-bay?tab=species`), Identify (`/id`).
+- **Desktop search:** Moved from inline (middle of nav) to a search icon on the far right that expands into a full-width search bar, hiding other nav items. Close via X button, Escape, or outside click.
+- **SearchBar component:** Added `autoFocus` prop so search input focuses when expanded.
+- **Desktop link order:** Species, Identify, Swim Log, Profile/Sign in/Sign up, Alerts (bell icon), Search (magnifying glass icon).
+- **Mobile menu:** Unchanged (search remains inline).
+
+#### Auth flow — 4 bugs fixed
+
+1. **Singleton browser client** (`src/lib/supabase/client.ts`): `createClient()` was creating a new `createBrowserClient` instance on every call. Multiple instances competed for the same `navigator.lock` on the auth token, causing `Lock was released because another request stole it` errors and breaking sign out. Fixed with module-level singleton.
+
+2. **Sign out deadlock** (`src/components/AuthProvider.tsx` — root cause, `src/components/Header.tsx` — clean handler): The `onAuthStateChange` callback was `async` and awaited a `.from("users").select("username")` query that hangs forever (table doesn't exist yet / RLS blocks it). This callback runs inside Supabase's `navigator.locks` auth token lock — so the lock was held open indefinitely. Every subsequent auth operation (including `signOut()`) queued behind it and deadlocked. Fix: made the callback synchronous — username query fires via `.then()` so the callback returns immediately and releases the lock. Sign out handler now properly `await`s `signOut()` then does `window.location.href = "/"`.
+
+3. **Middleware matcher** (`src/middleware.ts`): Was limited to 6 route patterns (`/log`, `/alerts`, `/u`, `/api/alerts`, `/api/sightings`, `/auth`), missing `/`, `/login`, `/signup`, `/locations/*`, `/species/*`. Stale auth cookies survived after sign out because middleware didn't run on `/`. Changed to catch-all matcher (excludes only static assets).
+
+4. **Login navigation** (`src/app/login/page.tsx`): Used `router.push()` + `router.refresh()` (soft navigation) after sign in, which skipped middleware. Changed to `window.location.href` for full page load ensuring middleware runs.
+
+#### AuthProvider resilience (`src/components/AuthProvider.tsx`)
+- `setLoading(false)` now fires immediately after `getUser()`, before the `.from("users").select("username")` query. The username fetch runs in background — if the `users` table is unreachable or RLS blocks it, the nav still renders.
+- Added try/catch around username queries in both `loadUser` and `onAuthStateChange`.
+
+### Files changed
+- `src/lib/supabase/client.ts` — singleton pattern
+- `src/components/Header.tsx` — nav restructure, search icon, sign out fix
+- `src/components/SearchBar.tsx` — `autoFocus` prop
+- `src/components/AuthProvider.tsx` — loading state fix, error resilience
+- `src/middleware.ts` — catch-all matcher
+- `src/app/login/page.tsx` — full navigation after login, removed unused `useRouter`
+
+### Build
+- `npm run build` passes clean.

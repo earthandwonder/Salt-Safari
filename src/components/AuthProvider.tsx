@@ -54,21 +54,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         const newUser = session?.user ?? null;
         setUser(newUser);
         setLoading(false);
         if (newUser) {
-          try {
-            const { data } = await supabase
-              .from("users")
-              .select("username")
-              .eq("id", newUser.id)
-              .single();
-            setUsername(data?.username ?? null);
-          } catch {
-            // users table may not exist yet
-          }
+          // Fetch username outside the auth lock — don't block the callback
+          supabase
+            .from("users")
+            .select("username")
+            .eq("id", newUser.id)
+            .single()
+            .then(({ data }) => setUsername(data?.username ?? null))
+            .catch(() => {});
         } else {
           setUsername(null);
         }

@@ -57,15 +57,11 @@ export default function Header() {
     };
   }, [searchOpen]);
 
-  function handleSignOut() {
-    const supabase = createClient();
-    // Fire and forget — navigate regardless of whether signOut succeeds
-    supabase.auth.signOut().finally(() => {
-      window.location.href = "/";
-    });
-    // Fallback if signOut hangs
-    setTimeout(() => { window.location.href = "/"; }, 2000);
+  async function handleSignOut() {
     setMenuOpen(false);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
   }
 
   const displayName =
