@@ -26,3 +26,10 @@ supabase/.temp/
 
 # FishBase parquet data (large files, CC-BY-NC)
 data/fishbase/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

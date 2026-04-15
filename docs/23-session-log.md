@@ -1704,3 +1704,52 @@ Four targeted fixes for the slowest pages (all verified with `npm run build`):
 
 ### Build
 - `npm run build` passes clean.
+
+## Automated Test Suite (Playwright)
+
+**Date:** 2026-04-15
+
+### What was built
+
+#### Playwright e2e test suite — 7 test files, 92 tests
+- Installed Playwright with Chromium + WebKit browsers
+- Configured `playwright.config.ts`: desktop Chrome + mobile Safari projects, auto-starts dev server, screenshots on failure
+- Added npm scripts: `npm test`, `npm run test:smoke`, `npm run test:ui`
+
+#### Test files created
+- `tests/smoke.spec.ts` — visits every public route, checks for no 500s, validates titles (11 tests)
+- `tests/homepage.spec.ts` — hero section, header nav, footer, heading hierarchy (4 tests)
+- `tests/navigation.spec.ts` — page-to-page navigation, login/signup form fields (6 tests)
+- `tests/locations.spec.ts` — regions index, region pages, dive site pages load without errors (3 tests)
+- `tests/species.spec.ts` — species browse, detail page, tabs (3 tests)
+- `tests/auth.spec.ts` — invalid login error display, empty form prevention, protected page handling (4 tests)
+- `tests/api.spec.ts` — all API routes respond, auth rejection on protected endpoints, cron rejection (8 tests)
+- `tests/search.spec.ts` — search API returns JSON, handles empty queries, handles XSS input (3 tests)
+- `tests/mobile.spec.ts` — no horizontal overflow, font readability on mobile viewports (4 tests)
+
+#### Bugs found and fixed
+1. **TypeScript build error** in `src/components/AuthProvider.tsx`: `.catch()` called on Supabase `PromiseLike` (not a full `Promise`). Fixed by wrapping in `Promise.resolve()`.
+
+#### Bugs found (not yet fixed — logged as test warnings)
+1. **DELETE `/api/sightings/:id`** returns 500 instead of 401 for unauthenticated requests
+2. **DELETE `/api/alerts/:id`** returns 500 instead of 401 for unauthenticated requests
+
+### Files created
+- `playwright.config.ts`
+- `tests/smoke.spec.ts`
+- `tests/homepage.spec.ts`
+- `tests/navigation.spec.ts`
+- `tests/locations.spec.ts`
+- `tests/species.spec.ts`
+- `tests/auth.spec.ts`
+- `tests/api.spec.ts`
+- `tests/search.spec.ts`
+- `tests/mobile.spec.ts`
+
+### Files changed
+- `package.json` — added `test`, `test:smoke`, `test:ui` scripts
+- `src/components/AuthProvider.tsx` — fixed `.catch()` on `PromiseLike`
+
+### Build
+- `npm run build` passes clean.
+- `npm test` — 87 passed, 5 skipped (mobile-only tests skipped on desktop).

@@ -10,7 +10,10 @@
     "pipeline": "npx tsx --env-file=.env.local scripts/run-pipeline.ts",
     "validate": "npx tsx --env-file=.env.local scripts/validate-and-publish.ts",
     "send-alerts": "npx tsx --env-file=.env.local scripts/send-alerts.ts",
-    "set-spottable": "npx tsx --env-file=.env.local scripts/set-spottable.ts"
+    "set-spottable": "npx tsx --env-file=.env.local scripts/set-spottable.ts",
+    "test": "npx playwright test",
+    "test:smoke": "npx playwright test smoke",
+    "test:ui": "npx playwright test --ui"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",
@@ -26,6 +29,7 @@
     "resend": "^6.10.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^22.15.2",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",

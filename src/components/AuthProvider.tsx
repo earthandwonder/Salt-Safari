@@ -60,11 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         if (newUser) {
           // Fetch username outside the auth lock — don't block the callback
-          supabase
-            .from("users")
-            .select("username")
-            .eq("id", newUser.id)
-            .single()
+          Promise.resolve(
+            supabase
+              .from("users")
+              .select("username")
+              .eq("id", newUser.id)
+              .single()
+          )
             .then(({ data }) => setUsername(data?.username ?? null))
             .catch(() => {});
         } else {
