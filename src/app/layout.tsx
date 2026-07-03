@@ -50,7 +50,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${fraunces.variable} ${outfit.variable}`} suppressHydrationWarning>
       <body className="font-body antialiased pb-20 md:pb-0">
-        <script src="https://benmccarthy.com.au/shared/header.js" defer></script>
         <AuthProvider>
           {children}
           <BottomNav />
