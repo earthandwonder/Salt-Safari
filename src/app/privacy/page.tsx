@@ -202,8 +202,8 @@ export default function PrivacyPage() {
               <p className="text-slate-600 leading-relaxed">
                 If you have questions about this privacy policy or wish to
                 exercise your rights, contact us at{" "}
-                <a href="mailto:hello@saltsafari.com.au">
-                  hello@saltsafari.com.au
+                <a href="mailto:ben@benmccarthy.com.au">
+                  ben@benmccarthy.com.au
                 </a>
                 .
               </p>

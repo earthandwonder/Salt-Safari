@@ -37,13 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user) {
           try {
             const { data } = await supabase
-              .from("users")
+              .schema("public")
+              .from("profiles")
               .select("username")
               .eq("id", user.id)
               .single();
             setUsername(data?.username ?? null);
           } catch {
-            // users table may not exist yet
+            // profiles table may not exist yet
           }
         }
       } catch {
@@ -62,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fetch username outside the auth lock — don't block the callback
           Promise.resolve(
             supabase
-              .from("users")
+              .schema("public")
+              .from("profiles")
               .select("username")
               .eq("id", newUser.id)
               .single()

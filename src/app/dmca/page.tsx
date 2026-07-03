@@ -48,8 +48,8 @@ export default function DmcaPage() {
               </h2>
               <p className="text-slate-600 leading-relaxed">
                 To request removal of content, send an email to{" "}
-                <a href="mailto:hello@saltsafari.com.au">
-                  hello@saltsafari.com.au
+                <a href="mailto:ben@benmccarthy.com.au">
+                  ben@benmccarthy.com.au
                 </a>{" "}
                 with the subject line &quot;Takedown Request&quot; and include
                 the following information:
@@ -128,8 +128,8 @@ export default function DmcaPage() {
               <h2 className="text-xl font-semibold mt-10 mb-4">Contact</h2>
               <p className="text-slate-600 leading-relaxed">
                 For all copyright and takedown enquiries:{" "}
-                <a href="mailto:hello@saltsafari.com.au">
-                  hello@saltsafari.com.au
+                <a href="mailto:ben@benmccarthy.com.au">
+                  ben@benmccarthy.com.au
                 </a>
               </p>
 

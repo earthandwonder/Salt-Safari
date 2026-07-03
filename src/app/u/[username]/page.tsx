@@ -49,7 +49,8 @@ async function getProfileData(username: string): Promise<ProfileData | null> {
 
   // 1. Fetch user by username
   const { data: user } = await supabase
-    .from("users")
+    .schema("public")
+    .from("profiles")
     .select("id, username, display_name, created_at")
     .eq("username", username)
     .single();

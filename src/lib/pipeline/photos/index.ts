@@ -344,14 +344,14 @@ async function downloadAndUpload(
   let imageResponse: Response;
   try {
     imageResponse = await fetch(imageUrl, {
-      headers: { "User-Agent": "SaltSafari/1.0 (https://saltsafari.app; hello@saltsafari.app)" },
+      headers: { "User-Agent": "SaltSafari/1.0 (https://benmccarthy.com.au/p/salt-safari; ben@benmccarthy.com.au)" },
     });
 
     if (imageResponse.status === 429) {
       console.log(`[Photo Pipeline] 429 on download, waiting 10s then retrying`);
       await sleep(10000);
       imageResponse = await fetch(imageUrl, {
-        headers: { "User-Agent": "SaltSafari/1.0 (https://saltsafari.app; hello@saltsafari.app)" },
+        headers: { "User-Agent": "SaltSafari/1.0 (https://benmccarthy.com.au/p/salt-safari; ben@benmccarthy.com.au)" },
       });
     }
   } catch (err) {

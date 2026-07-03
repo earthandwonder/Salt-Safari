@@ -224,8 +224,8 @@ export default function TermsPage() {
               </h2>
               <p className="text-slate-600 leading-relaxed">
                 Questions about these terms? Contact us at{" "}
-                <a href="mailto:hello@saltsafari.com.au">
-                  hello@saltsafari.com.au
+                <a href="mailto:ben@benmccarthy.com.au">
+                  ben@benmccarthy.com.au
                 </a>
                 .
               </p>

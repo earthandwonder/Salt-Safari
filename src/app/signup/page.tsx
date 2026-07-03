@@ -60,9 +60,10 @@ function SignUpForm() {
 
     const supabase = createClient();
 
-    // Check username uniqueness
+    // Check username uniqueness (profiles is in public schema)
     const { data: existing } = await supabase
-      .from("users")
+      .schema("public")
+      .from("profiles")
       .select("id")
       .eq("username", username)
       .maybeSingle();
@@ -90,10 +91,11 @@ function SignUpForm() {
       return;
     }
 
-    // Set username on the users table (the trigger creates the row)
+    // Set username on the profiles table (the trigger creates the row)
     if (data.user) {
       await supabase
-        .from("users")
+        .schema("public")
+        .from("profiles")
         .update({ username })
         .eq("id", data.user.id);
     }
@@ -254,7 +256,7 @@ function SignUpForm() {
               </label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs sm:text-sm text-slate-400">
-                  saltsafari.app/u/
+                  benmccarthy.com.au/p/salt-safari/u/
                 </span>
                 <input
                   id="username"

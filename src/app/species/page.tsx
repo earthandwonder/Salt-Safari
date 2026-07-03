@@ -51,7 +51,7 @@ export default async function SpeciesBrowsePage() {
     name: "All Species — Salt Safari",
     description:
       "Browse all marine species found at snorkelling and diving locations across Australia.",
-    url: "https://saltsafari.com.au/species",
+    url: "https://benmccarthy.com.au/p/salt-safari/species",
     numberOfItems: totalCount,
   };
 

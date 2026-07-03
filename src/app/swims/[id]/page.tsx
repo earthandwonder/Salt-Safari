@@ -63,7 +63,8 @@ async function getTripData(tripId: string): Promise<TripData | null> {
 
   // 1. Fetch user
   const { data: user } = await supabase
-    .from("users")
+    .schema("public")
+    .from("profiles")
     .select("id, display_name, username")
     .eq("id", parsed.userId)
     .single();

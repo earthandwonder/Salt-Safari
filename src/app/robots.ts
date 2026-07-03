@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/auth/", "/login", "/signup"],
       },
     ],
-    sitemap: "https://saltsafari.com.au/sitemap.xml",
+    sitemap: "https://benmccarthy.com.au/p/salt-safari/sitemap.xml",
   };
 }

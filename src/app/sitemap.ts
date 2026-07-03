@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 
-const BASE_URL = "https://saltsafari.com.au";
+const BASE_URL = "https://benmccarthy.com.au/p/salt-safari";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();

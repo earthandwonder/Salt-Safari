@@ -156,7 +156,7 @@ async function doSearch(
   let response: Response;
   try {
     response = await fetch(url, {
-      headers: { "User-Agent": "SaltSafari/1.0 (https://saltsafari.app; hello@saltsafari.app)" },
+      headers: { "User-Agent": "SaltSafari/1.0 (https://benmccarthy.com.au/p/salt-safari; ben@benmccarthy.com.au)" },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

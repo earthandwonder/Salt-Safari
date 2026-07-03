@@ -40,6 +40,16 @@ type UserRow = {
   notification_prefs: string;
 };
 
+type ProfileRow = {
+  id: string;
+  display_name: string | null;
+};
+
+type UserPrefRow = {
+  user_id: string;
+  notification_prefs: string;
+};
+
 type RegionRow = {
   id: string;
   slug: string;
@@ -57,8 +67,8 @@ export async function sendSeasonAlerts(options?: { dryRun?: boolean }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SECRET_KEY;
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "alerts@saltsafari.app";
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://saltsafari.app";
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "ben@benmccarthy.com.au";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://benmccarthy.com.au/p/salt-safari";
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("Missing SUPABASE_URL or SUPABASE_SECRET_KEY");
@@ -67,7 +77,9 @@ export async function sendSeasonAlerts(options?: { dryRun?: boolean }) {
     throw new Error("Missing RESEND_API_KEY");
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    db: { schema: "salt_safari" },
+  });
   const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
   const currentMonth = new Date().getMonth() + 1; // 1-12
@@ -205,19 +217,39 @@ export async function sendSeasonAlerts(options?: { dryRun?: boolean }) {
 
   // 6. Fetch user details
   const userIds = [...byUser.keys()];
-  const allUsers: UserRow[] = [];
+
+  // Fetch profiles (display_name) from public schema
+  const allProfiles: ProfileRow[] = [];
   for (let i = 0; i < userIds.length; i += 200) {
     const batch = userIds.slice(i, i + 200);
     const { data } = await supabase
-      .from("users")
-      .select("id, display_name, notification_prefs")
+      .schema("public")
+      .from("profiles")
+      .select("id, display_name")
       .in("id", batch);
-    if (data) allUsers.push(...(data as UserRow[]));
+    if (data) allProfiles.push(...(data as ProfileRow[]));
   }
 
+  // Fetch notification prefs from salt_safari schema
+  const allPrefs: UserPrefRow[] = [];
+  for (let i = 0; i < userIds.length; i += 200) {
+    const batch = userIds.slice(i, i + 200);
+    const { data } = await supabase
+      .from("user_preferences")
+      .select("user_id, notification_prefs")
+      .in("user_id", batch);
+    if (data) allPrefs.push(...(data as UserPrefRow[]));
+  }
+
+  // Merge into UserRow lookup
+  const prefMap = new Map(allPrefs.map((p) => [p.user_id, p.notification_prefs]));
   const userLookup = new Map<string, UserRow>();
-  for (const u of allUsers) {
-    userLookup.set(u.id, u);
+  for (const p of allProfiles) {
+    userLookup.set(p.id, {
+      id: p.id,
+      display_name: p.display_name,
+      notification_prefs: prefMap.get(p.id) ?? "email",
+    });
   }
 
   // Fetch user emails from auth.users via admin API
