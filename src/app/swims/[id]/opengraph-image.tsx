@@ -39,7 +39,7 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
 
   // Fetch data
   const { data: user } = await supabase
-    .schema("public")
+    .schema("public" as any)
     .from("profiles")
     .select("display_name, username")
     .eq("id", parsed.userId)

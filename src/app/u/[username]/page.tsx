@@ -49,7 +49,7 @@ async function getProfileData(username: string): Promise<ProfileData | null> {
 
   // 1. Fetch user by username
   const { data: user } = await supabase
-    .schema("public")
+    .schema("public" as any)
     .from("profiles")
     .select("id, username, display_name, created_at")
     .eq("username", username)

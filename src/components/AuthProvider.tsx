@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (user) {
           try {
             const { data } = await supabase
-              .schema("public")
+              .schema("public" as any)
               .from("profiles")
               .select("username")
               .eq("id", user.id)
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fetch username outside the auth lock — don't block the callback
           Promise.resolve(
             supabase
-              .schema("public")
+              .schema("public" as any)
               .from("profiles")
               .select("username")
               .eq("id", newUser.id)

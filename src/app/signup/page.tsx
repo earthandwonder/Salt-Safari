@@ -62,7 +62,7 @@ function SignUpForm() {
 
     // Check username uniqueness (profiles is in public schema)
     const { data: existing } = await supabase
-      .schema("public")
+      .schema("public" as any)
       .from("profiles")
       .select("id")
       .eq("username", username)
@@ -94,7 +94,7 @@ function SignUpForm() {
     // Set username on the profiles table (the trigger creates the row)
     if (data.user) {
       await supabase
-        .schema("public")
+        .schema("public" as any)
         .from("profiles")
         .update({ username })
         .eq("id", data.user.id);

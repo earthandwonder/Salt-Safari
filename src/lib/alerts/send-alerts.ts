@@ -223,7 +223,7 @@ export async function sendSeasonAlerts(options?: { dryRun?: boolean }) {
   for (let i = 0; i < userIds.length; i += 200) {
     const batch = userIds.slice(i, i + 200);
     const { data } = await supabase
-      .schema("public")
+      .schema("public" as any)
       .from("profiles")
       .select("id, display_name")
       .in("id", batch);
