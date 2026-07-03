@@ -37,7 +37,7 @@ function LoginForm() {
         setError(error.message);
         setLoading(false);
       } else {
-        window.location.href = redirectTo;
+        window.location.href = `${process.env.NEXT_PUBLIC_BASE_PATH}${redirectTo}`;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -51,7 +51,7 @@ function LoginForm() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+          redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
         },
       });
       if (error) {

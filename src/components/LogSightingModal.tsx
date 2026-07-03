@@ -112,7 +112,7 @@ export function LogSightingModal({
     setError(null);
 
     try {
-      const res = await fetch("/api/sightings", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH}/api/sightings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

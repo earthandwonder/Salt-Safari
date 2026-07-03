@@ -173,7 +173,7 @@ export default function SpeciesIdWizard({ locations }: { locations: LocationOpti
     if (answers.habitat) params.set("habitat", answers.habitat);
 
     try {
-      const res = await fetch(`/api/species/identify?${params.toString()}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH}/api/species/identify?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setResults(data.results);

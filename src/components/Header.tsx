@@ -61,7 +61,7 @@ export default function Header() {
     setMenuOpen(false);
     const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = "/";
+    window.location.href = process.env.NEXT_PUBLIC_BASE_PATH || "/";
   }
 
   const displayName =

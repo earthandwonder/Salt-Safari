@@ -2,8 +2,11 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
+const basePath = "/p/salt-safari";
+
 const nextConfig: NextConfig = {
-  basePath: "/p/salt-safari",
+  basePath,
+  env: { NEXT_PUBLIC_BASE_PATH: basePath },
   headers: isDev
     ? async () => [
         {

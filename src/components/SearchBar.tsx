@@ -54,7 +54,7 @@ export function SearchBar({ autoFocus = false }: { autoFocus?: boolean }) {
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/search?q=${encodeURIComponent(query.trim())}`,
+          `${process.env.NEXT_PUBLIC_BASE_PATH}/api/search?q=${encodeURIComponent(query.trim())}`,
           { signal: controller.signal }
         );
         if (res.ok) {

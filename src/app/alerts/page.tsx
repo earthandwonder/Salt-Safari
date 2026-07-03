@@ -60,7 +60,7 @@ export default function AlertsPage() {
   const fetchAlerts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/alerts");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH}/api/alerts`);
       if (res.ok) {
         const data = await res.json();
         setAlerts(data.alerts ?? []);
@@ -74,7 +74,7 @@ export default function AlertsPage() {
     async (id: string, currentEnabled: boolean) => {
       setToggling((prev) => new Set([...prev, id]));
       try {
-        const res = await fetch(`/api/alerts/${id}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH}/api/alerts/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ enabled: !currentEnabled }),
@@ -101,7 +101,7 @@ export default function AlertsPage() {
     async (id: string) => {
       setDeleting((prev) => new Set([...prev, id]));
       try {
-        const res = await fetch(`/api/alerts/${id}`, { method: "DELETE" });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH}/api/alerts/${id}`, { method: "DELETE" });
         if (res.ok) {
           setAlerts((prev) => prev.filter((a) => a.id !== id));
         }

@@ -31,7 +31,7 @@ export function AlertSubscribeModal({
     setErrorMsg("");
 
     try {
-      const res = await fetch("/api/alerts", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH}/api/alerts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ speciesId, locationId }),
