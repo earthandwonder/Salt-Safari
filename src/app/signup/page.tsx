@@ -253,10 +253,7 @@ function SignUpForm() {
               >
                 Username
               </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs sm:text-sm text-slate-400">
-                  benmccarthy.com.au/p/salt-safari/u/
-                </span>
+              <div>
                 <input
                   id="username"
                   type="text"
@@ -265,7 +262,7 @@ function SignUpForm() {
                   required
                   minLength={3}
                   maxLength={30}
-                  className="w-full rounded-xl border border-slate-200 pl-[118px] sm:pl-[136px] pr-4 py-3 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 transition-colors"
                   placeholder="your-username"
                 />
               </div>
