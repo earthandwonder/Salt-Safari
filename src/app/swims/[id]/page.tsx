@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
 import { TripPageClient } from "./TripPageClient";
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -60,10 +60,10 @@ async function getTripData(tripId: string): Promise<TripData | null> {
   if (!parsed) return null;
 
   const supabase = await createClient();
+  const publicDb = await createPublicClient();
 
   // 1. Fetch user
-  const { data: user } = await supabase
-    .schema("public" as any)
+  const { data: user } = await publicDb
     .from("profiles")
     .select("id, display_name, username")
     .eq("id", parsed.userId)

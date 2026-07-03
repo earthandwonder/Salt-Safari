@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
 
 export const runtime = "edge";
 export const alt = "Swim report on Salt Safari";
@@ -38,8 +38,8 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
   const supabase = await createClient();
 
   // Fetch data
-  const { data: user } = await supabase
-    .schema("public" as any)
+  const publicDb = await createPublicClient();
+  const { data: user } = await publicDb
     .from("profiles")
     .select("display_name, username")
     .eq("id", parsed.userId)

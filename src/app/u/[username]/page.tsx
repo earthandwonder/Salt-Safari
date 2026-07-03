@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createPublicClient } from "@/lib/supabase/server";
 import { ProfilePageClient } from "./ProfilePageClient";
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -46,10 +46,10 @@ export type ProfileData = {
 // ─── Data fetching ───────────────────────────────────────────────
 async function getProfileData(username: string): Promise<ProfileData | null> {
   const supabase = await createClient();
+  const publicDb = await createPublicClient();
 
   // 1. Fetch user by username
-  const { data: user } = await supabase
-    .schema("public" as any)
+  const { data: user } = await publicDb
     .from("profiles")
     .select("id, username, display_name, created_at")
     .eq("username", username)

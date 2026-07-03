@@ -80,6 +80,7 @@ export async function sendSeasonAlerts(options?: { dryRun?: boolean }) {
   const supabase = createClient(supabaseUrl, supabaseKey, {
     db: { schema: "salt_safari" },
   });
+  const publicDb = createClient(supabaseUrl, supabaseKey);
   const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
   const currentMonth = new Date().getMonth() + 1; // 1-12
@@ -222,8 +223,7 @@ export async function sendSeasonAlerts(options?: { dryRun?: boolean }) {
   const allProfiles: ProfileRow[] = [];
   for (let i = 0; i < userIds.length; i += 200) {
     const batch = userIds.slice(i, i + 200);
-    const { data } = await supabase
-      .schema("public" as any)
+    const { data } = await publicDb
       .from("profiles")
       .select("id, display_name")
       .in("id", batch);

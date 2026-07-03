@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createPublicClient } from "@/lib/supabase/client";
 
 const USERNAME_REGEX = /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/;
 
@@ -59,10 +59,10 @@ function SignUpForm() {
     }
 
     const supabase = createClient();
+    const publicClient = createPublicClient();
 
     // Check username uniqueness (profiles is in public schema)
-    const { data: existing } = await supabase
-      .schema("public" as any)
+    const { data: existing } = await publicClient
       .from("profiles")
       .select("id")
       .eq("username", username)
@@ -93,8 +93,7 @@ function SignUpForm() {
 
     // Set username on the profiles table (the trigger creates the row)
     if (data.user) {
-      await supabase
-        .schema("public" as any)
+      await publicClient
         .from("profiles")
         .update({ username })
         .eq("id", data.user.id);

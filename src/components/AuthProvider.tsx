@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, createPublicClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient();
+    const publicClient = createPublicClient();
 
     async function loadUser() {
       try {
@@ -36,8 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Fetch username in background — don't block loading state
         if (user) {
           try {
-            const { data } = await supabase
-              .schema("public" as any)
+            const { data } = await publicClient
               .from("profiles")
               .select("username")
               .eq("id", user.id)
@@ -62,8 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (newUser) {
           // Fetch username outside the auth lock — don't block the callback
           Promise.resolve(
-            supabase
-              .schema("public" as any)
+            publicClient
               .from("profiles")
               .select("username")
               .eq("id", newUser.id)
