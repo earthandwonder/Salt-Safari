@@ -39,6 +39,16 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_AU",
     siteName: "Salt Safari",
+    title: "Salt Safari — Discover Marine Life at Every Dive Spot",
+    description:
+      "Find out which marine species you can see at snorkelling and diving locations across Australia. Species guides, seasonal alerts, and a free ID tool.",
+    url: "https://benmccarthy.com.au/p/salt-safari",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Salt Safari — Discover Marine Life at Every Dive Spot",
+    description:
+      "Find out which marine species you can see at snorkelling and diving locations across Australia. Species guides, seasonal alerts, and a free ID tool.",
   },
 };
 
