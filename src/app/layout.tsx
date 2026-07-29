@@ -18,6 +18,8 @@ const outfit = Outfit({
   display: "swap",
 });
 
+const ogImage = "https://pub-679ea585b55d48a78970795a14563299.r2.dev/locations/cabbage-tree-bay/hero.jpg";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://benmccarthy.com.au"),
   title: {
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
     template: "%s | Salt Safari",
   },
   description:
-    "Find out which marine species you can see at snorkelling and diving locations across Australia. Species guides, seasonal alerts, and a free ID tool.",
+    "Your complete guide to every species at Sydney's best dive and snorkel spots. Learn what's in season, log your sightings, and share what you discover.",
   keywords: [
     "snorkelling",
     "diving",
@@ -39,16 +41,25 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_AU",
     siteName: "Salt Safari",
-    title: "Salt Safari — Discover Marine Life at Every Dive Spot",
+    title: "Discover Marine Life at Every Dive Spot",
     description:
-      "Find out which marine species you can see at snorkelling and diving locations across Australia. Species guides, seasonal alerts, and a free ID tool.",
+      "Your complete guide to every species at Sydney's best dive and snorkel spots. Learn what's in season, log your sightings, and share what you discover.",
     url: "/p/salt-safari",
+    images: [
+      {
+        url: ogImage,
+        width: 1920,
+        height: 1080,
+        alt: "Panoramic view over Shelly Beach and Cabbage Tree Bay in Manly, Sydney",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Salt Safari — Discover Marine Life at Every Dive Spot",
+    title: "Discover Marine Life at Every Dive Spot",
     description:
-      "Find out which marine species you can see at snorkelling and diving locations across Australia. Species guides, seasonal alerts, and a free ID tool.",
+      "Your complete guide to every species at Sydney's best dive and snorkel spots. Learn what's in season, log your sightings, and share what you discover.",
+    images: [ogImage],
   },
 };
 
