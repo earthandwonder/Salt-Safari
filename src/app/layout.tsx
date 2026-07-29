@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "Salt Safari — Discover Marine Life at Every Dive Spot",
     description:
       "Find out which marine species you can see at snorkelling and diving locations across Australia. Species guides, seasonal alerts, and a free ID tool.",
-    url: "https://benmccarthy.com.au/p/salt-safari",
+    url: "/",
   },
   twitter: {
     card: "summary_large_image",
