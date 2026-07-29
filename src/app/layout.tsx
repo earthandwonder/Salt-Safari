@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_AU",
     siteName: "Salt Safari",
-    title: "Salt Safari — Cabbage Tree Bay",
+    title: "Salt Safari",
     description:
       "Thousands of species call Cabbage Tree Bay home. Explore what's in season, ID what you saw, log your swims, and share your discoveries.",
     url: "/p/salt-safari",
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Salt Safari — Cabbage Tree Bay",
+    title: "Salt Safari",
     description:
       "Thousands of species call Cabbage Tree Bay home. Explore what's in season, ID what you saw, log your swims, and share your discoveries.",
     images: [ogImage],
