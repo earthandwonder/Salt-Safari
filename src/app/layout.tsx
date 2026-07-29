@@ -23,11 +23,11 @@ const ogImage = "https://pub-679ea585b55d48a78970795a14563299.r2.dev/locations/c
 export const metadata: Metadata = {
   metadataBase: new URL("https://benmccarthy.com.au"),
   title: {
-    default: "Salt Safari — Discover Marine Life at Every Dive Spot",
+    default: "Salt Safari — Cabbage Tree Bay Marine Life Guide",
     template: "%s | Salt Safari",
   },
   description:
-    "Your complete guide to every species at Sydney's best dive and snorkel spots. Learn what's in season, log your sightings, and share what you discover.",
+    "Your complete guide to every species at Cabbage Tree Bay. See what's in season, log your sightings, and share what you discover.",
   keywords: [
     "snorkelling",
     "diving",
@@ -41,9 +41,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_AU",
     siteName: "Salt Safari",
-    title: "Discover Marine Life at Every Dive Spot",
+    title: "Cabbage Tree Bay Marine Life Guide",
     description:
-      "Your complete guide to every species at Sydney's best dive and snorkel spots. Learn what's in season, log your sightings, and share what you discover.",
+      "Your complete guide to every species at Cabbage Tree Bay. See what's in season, log your sightings, and share what you discover.",
     url: "/p/salt-safari",
     images: [
       {
@@ -56,9 +56,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Discover Marine Life at Every Dive Spot",
+    title: "Cabbage Tree Bay Marine Life Guide",
     description:
-      "Your complete guide to every species at Sydney's best dive and snorkel spots. Learn what's in season, log your sightings, and share what you discover.",
+      "Your complete guide to every species at Cabbage Tree Bay. See what's in season, log your sightings, and share what you discover.",
     images: [ogImage],
   },
 };
