@@ -19,7 +19,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://benmccarthy.com.au/p/salt-safari"),
+  metadataBase: new URL("https://benmccarthy.com.au"),
   title: {
     default: "Salt Safari — Discover Marine Life at Every Dive Spot",
     template: "%s | Salt Safari",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "Salt Safari — Discover Marine Life at Every Dive Spot",
     description:
       "Find out which marine species you can see at snorkelling and diving locations across Australia. Species guides, seasonal alerts, and a free ID tool.",
-    url: "/",
+    url: "/p/salt-safari",
   },
   twitter: {
     card: "summary_large_image",
